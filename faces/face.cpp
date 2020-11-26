@@ -50,15 +50,11 @@ std::vector<string> split(string line, string delimiter) {
  */
 std::vector<Rect> get_true_face(std::string path) {
 
-  // Copy path to char array
-  char path_char[path.length() + 1];
-  strcpy(path_char, path.c_str());
-
   // Read in file
-  ifstream infile(path_char);
+  ifstream infile(path.c_str());
  
   if (!infile) {
-    cerr << "Can't open input file " << path_char << endl; 
+    cerr << "Can't open input file " << path << endl; 
   }
 
   std::string line;
@@ -81,6 +77,16 @@ std::vector<Rect> get_true_face(std::string path) {
   return faces;
 }
 
+float intersection_over_union(Rect detected_rect, Rect true_rect) {
+
+  Point topRightIntersectionPoint = Point(max(detected_rect.x, true_rect.x), max(detected_rect.y, true_rect.y));
+  Point bottomRightIntersectionPoint = Point(min(detected_rect.x + detected_rect.width, true_rect.x + true_rect.width), min(detected_rect.y + detected_rect.height, true_rect.y + true_rect.height));
+
+  Rect intersection_rect = Rect(topRightIntersectionPoint, bottomRightIntersectionPoint);
+
+  return intersection_rect.area() / (float)(detected_rect.area() + true_rect.area() - intersection_rect.area());
+}
+
 
 /** @function draw */
 void draw(Rect rect, Mat frame) {
@@ -93,7 +99,6 @@ int main( int argc, const char** argv )
 {
     // 0. Setup true faces
     std::vector<Rect> true_faces = get_true_face(argv[2]);
-    true_faces.push_back(Rect(Point(327, 96), Point(492, 278)));
 
     // 1. Read Input Image
 	Mat frame = imread(argv[1], CV_LOAD_IMAGE_COLOR);
@@ -116,8 +121,9 @@ int main( int argc, const char** argv )
 		rectangle(frame, Point(detected_faces[i].x, detected_faces[i].y), Point(detected_faces[i].x + detected_faces[i].width, detected_faces[i].y + detected_faces[i].height), Scalar( 0, 255, 0 ), 2);
 	}
 
+    std::cout << "IOA: " << intersection_over_union(detected_faces[0], true_faces[0]) << std::endl;
 
-	// 4. Save Result Image
+	// 6. Save Result Image
 	imwrite( "detected.jpg", frame );
 
 	return 0;
@@ -136,7 +142,7 @@ std::vector<Rect> detectFaces( Mat frame )
 	// 2. Perform Viola-Jones Object Detection 
 	cascade.detectMultiScale( frame_gray, faces, 1.1, 1, 0|CV_HAAR_SCALE_IMAGE, Size(50, 50), Size(500,500) );
 
-       // 3. Print number of Faces found
+    // 3. Print number of Faces found
 	std::cout << faces.size() << std::endl;
 
     return faces;
