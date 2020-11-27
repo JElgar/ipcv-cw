@@ -61,9 +61,7 @@ std::vector<Rect> get_true_face(std::string path) {
   string token;
   vector<Rect> faces;
 
-  cout << "Getting tokens " << endl;
   while(getline(infile, line)) {
-    cout << "Wokring on line " << line << endl;
     vector<string> tokens = split(line, ",");
     
     int x = sti(tokens[0]);
@@ -103,12 +101,14 @@ int number_of_correctly_detected_faces(vector<Rect> detected_rects, vector<Rect>
       number_of_detected_faces++;
     }
   }
-  std::cout << number_of_detected_faces << ", "<< true_rects.size() << endl;
   return number_of_detected_faces;
 }
 
 
 float true_positive_rate(vector<Rect> detected_rects, vector<Rect> true_rects) {
+  if (true_rects.size() == 0) {
+    return 1;
+  }
   return (float)number_of_correctly_detected_faces(detected_rects, true_rects) / (float)true_rects.size();
 }
 
@@ -116,8 +116,6 @@ float true_positive_rate(vector<Rect> detected_rects, vector<Rect> true_rects) {
 float f1_score(vector<Rect> detected_rects, vector<Rect> true_rects) {
   float recall = true_positive_rate(detected_rects, true_rects);
   float precision = number_of_correctly_detected_faces(detected_rects, true_rects) / (float)detected_rects.size();
-
-  std::cout << recall << ", "<< precision << endl;
   return (float)2 * (precision * recall) / (precision + recall);
 }
 
@@ -154,8 +152,7 @@ int main( int argc, const char** argv )
 	{
 		rectangle(frame, detected_faces[i], Scalar( 0, 255, 0 ), 2);
 	}
-
-    cout << "IOA: " << intersection_over_union(detected_faces[0], true_faces[0]) << endl;
+  
     cout << "TPR: " << true_positive_rate(detected_faces, true_faces) << endl;
     cout << "F1: " << f1_score(detected_faces, true_faces) << endl;
 
