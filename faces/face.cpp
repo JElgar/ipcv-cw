@@ -5,7 +5,6 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // header inclusion
-#include <stdio.h>
 #include "opencv2/objdetect/objdetect.hpp"
 #include "opencv2/opencv.hpp"
 #include "opencv2/core/core.hpp"
@@ -17,11 +16,12 @@
 #include <sstream>
 #include <fstream>
 #include <string>
-//#include <algorithm>
 
 using namespace std;
 using namespace cv;
 
+
+const float THRESHOLD = 0.7;
 
 /** Function Headers */
 std::vector<Rect> detectFaces( Mat frame );
@@ -57,14 +57,14 @@ std::vector<Rect> get_true_face(std::string path) {
     cerr << "Can't open input file " << path << endl; 
   }
 
-  std::string line;
-  std::string token;
-  std::vector<Rect> faces;
+  string line;
+  string token;
+  vector<Rect> faces;
 
-  std::cout << "Getting tokens " << endl;
-  while(std::getline(infile, line)) {
-    std::cout << "Wokring on line " << line << endl;
-    std::vector<string> tokens = split(line, ",");
+  cout << "Getting tokens " << endl;
+  while(getline(infile, line)) {
+    cout << "Wokring on line " << line << endl;
+    vector<string> tokens = split(line, ",");
     
     int x = sti(tokens[0]);
     int y = sti(tokens[1]);
@@ -77,6 +77,7 @@ std::vector<Rect> get_true_face(std::string path) {
   return faces;
 }
 
+
 float intersection_over_union(Rect detected_rect, Rect true_rect) {
 
   Point topRightIntersectionPoint = Point(max(detected_rect.x, true_rect.x), max(detected_rect.y, true_rect.y));
@@ -88,9 +89,42 @@ float intersection_over_union(Rect detected_rect, Rect true_rect) {
 }
 
 
+int number_of_correctly_detected_faces(vector<Rect> detected_rects, vector<Rect> true_rects) {
+  int number_of_detected_faces = 0; 
+  for (int i = 0; i < true_rects.size(); i++) {
+    float max_iou = 0;
+    for (int j = 0; j < detected_rects.size(); j++) {
+      float iou = intersection_over_union(detected_rects[j], true_rects[i]);
+      if (iou > max_iou) {
+        max_iou = iou;
+      }
+    }
+    if (max_iou > THRESHOLD) {
+      number_of_detected_faces++;
+    }
+  }
+  std::cout << number_of_detected_faces << ", "<< true_rects.size() << endl;
+  return number_of_detected_faces;
+}
+
+
+float true_positive_rate(vector<Rect> detected_rects, vector<Rect> true_rects) {
+  return (float)number_of_correctly_detected_faces(detected_rects, true_rects) / (float)true_rects.size();
+}
+
+
+float f1_score(vector<Rect> detected_rects, vector<Rect> true_rects) {
+  float recall = true_positive_rate(detected_rects, true_rects);
+  float precision = number_of_correctly_detected_faces(detected_rects, true_rects) / (float)detected_rects.size();
+
+  std::cout << recall << ", "<< precision << endl;
+  return (float)2 * (precision * recall) / (precision + recall);
+}
+
+
 /** @function draw */
 void draw(Rect rect, Mat frame) {
-    rectangle(frame, Point(rect.x, rect.y), Point(rect.x + rect.width, rect.y + rect.height), Scalar( 0, 0, 255 ), 2);
+    rectangle(frame, rect, Scalar( 0, 0, 255 ), 2);
 }
 
 
@@ -98,7 +132,7 @@ void draw(Rect rect, Mat frame) {
 int main( int argc, const char** argv )
 {
     // 0. Setup true faces
-    std::vector<Rect> true_faces = get_true_face(argv[2]);
+    vector<Rect> true_faces = get_true_face(argv[2]);
 
     // 1. Read Input Image
 	Mat frame = imread(argv[1], CV_LOAD_IMAGE_COLOR);
@@ -107,7 +141,7 @@ int main( int argc, const char** argv )
 	if( !cascade.load( cascade_name ) ){ printf("--(!)Error loading\n"); return -1; };
 
     // 3. Detect Faces and Display Result
-    std::vector<Rect> detected_faces = detectFaces( frame );
+    vector<Rect> detected_faces = detectFaces( frame );
 
     // 4 Draw true faces
 	for( int i = 0; i < true_faces.size(); i++ )
@@ -118,10 +152,12 @@ int main( int argc, const char** argv )
     // 5. Draw box around faces found
 	for( int i = 0; i < detected_faces.size(); i++ )
 	{
-		rectangle(frame, Point(detected_faces[i].x, detected_faces[i].y), Point(detected_faces[i].x + detected_faces[i].width, detected_faces[i].y + detected_faces[i].height), Scalar( 0, 255, 0 ), 2);
+		rectangle(frame, detected_faces[i], Scalar( 0, 255, 0 ), 2);
 	}
 
-    std::cout << "IOA: " << intersection_over_union(detected_faces[0], true_faces[0]) << std::endl;
+    cout << "IOA: " << intersection_over_union(detected_faces[0], true_faces[0]) << endl;
+    cout << "TPR: " << true_positive_rate(detected_faces, true_faces) << endl;
+    cout << "F1: " << f1_score(detected_faces, true_faces) << endl;
 
 	// 6. Save Result Image
 	imwrite( "detected.jpg", frame );
@@ -130,9 +166,9 @@ int main( int argc, const char** argv )
 }
 
 /** @function detectAndDisplay */
-std::vector<Rect> detectFaces( Mat frame )
+vector<Rect> detectFaces( Mat frame )
 {
-	std::vector<Rect> faces;
+	vector<Rect> faces;
 	Mat frame_gray;
 
 	// 1. Prepare Image by turning it into Grayscale and normalising lighting
@@ -143,7 +179,7 @@ std::vector<Rect> detectFaces( Mat frame )
 	cascade.detectMultiScale( frame_gray, faces, 1.1, 1, 0|CV_HAAR_SCALE_IMAGE, Size(50, 50), Size(500,500) );
 
     // 3. Print number of Faces found
-	std::cout << faces.size() << std::endl;
+	cout << faces.size() << endl;
 
     return faces;
 

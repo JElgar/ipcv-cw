@@ -11,4 +11,9 @@
 \usepackage{graphicx} % Add pictures to your document
 \usepackage{listings} % Source code formatting and highlighting
 
+\section{Ground Truth}
 
+Limitation of TPR. Difficult to define "true" values. The bouding region of a
+face is discrete and we may choose not to detect side on faces. Example below
+shows 2 possible "true" values for a detection. One give a IOU of under 0.7 but
+the other gives over 0.9.
