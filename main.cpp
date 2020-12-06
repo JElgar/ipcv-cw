@@ -27,8 +27,8 @@ const float THRESHOLD = 0.6;
 std::vector<Rect> detectFaces( Mat frame );
 
 /** Global variables */
-String cascade_name = "frontalface.xml";
-//String cascade_name = "dartcascade/cascade.xml";
+//String cascade_name = "frontalface.xml";
+String cascade_name = "dartcascade/cascade.xml";
 CascadeClassifier cascade;
 
 int sti(string val) {
@@ -266,18 +266,15 @@ float f1_score(vector<Rect> detected_rects, vector<Rect> true_rects) {
 }
 
 
-/** @function draw */
-void draw(Rect rect, Mat frame) {
-    rectangle(frame, rect, Scalar( 0, 0, 255 ), 2);
+void draw(Rect rect, Mat frame, Scalar colour) {
+    rectangle(frame, rect, colour, 2);
 }
 
-
-void draw(vector<Rect> rects, Mat frame) {
+void draw(vector<Rect> rects, Mat frame, Scalar colour) {
   for ( int i = 0; i < rects.size(); i++ ) {
-    draw(rects[i], frame);
+    draw(rects[i], frame, colour);
   }
 }
-
 
 /** @function main */
 int main( int argc, const char** argv )
@@ -315,10 +312,10 @@ int main( int argc, const char** argv )
 	imwrite( "sobel.jpg", sobel_output );
 
     // 4 Draw true faces
-    draw(true_faces, frame);
+    draw(true_faces, frame, Scalar(0, 255, 0));
     
     // 5. Draw box around faces found
-    draw(detected_faces, frame);
+    draw(detected_faces, frame, Scalar(0, 0, 255));
   
     cout << "TPR: " << true_positive_rate(detected_faces, true_faces) << endl;
     cout << "F1: " << f1_score(detected_faces, true_faces) << endl;
