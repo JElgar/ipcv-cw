@@ -136,7 +136,7 @@ void sobel(cv::Mat &image) {
     cv::imwrite("grad-direction.png", direction);
 }
 
-vector<Vec2f> houghLines(Mat &input, int threshold = 80) {
+vector<Vec2f> houghLines(Mat &input, int threshold = 180) {
   
   int numberOfAngles = 1800;
 
@@ -147,8 +147,7 @@ vector<Vec2f> houghLines(Mat &input, int threshold = 80) {
   double rhoMax = imageHypot + 1;
   double numberOfRadii = 2*imageHypot + 1;
 
-  double thetaMin = CV_PI / (double)4;
-  double thetaMax = 3* CV_PI / (double)4;
+  double thetaMax = CV_PI;
   double thetaStep = thetaMax / (double)numberOfAngles;
 
   // Setup
@@ -169,8 +168,8 @@ vector<Vec2f> houghLines(Mat &input, int threshold = 80) {
       if (input_edges.at<int>(y, x) != 0) {
         
         // For every angle
-        for (double thetaIndex = 0; thetaIndex < numberOfAngles; thetaIndex++) {
-          double theta = thetaIndex * thetaStep;
+        for (int thetaIndex = 0; thetaIndex < numberOfAngles; thetaIndex++) {
+          double theta = (double)thetaIndex * thetaStep;
           double rho = x * std::cos(theta) + y * std::sin(theta);
           rho += imageHypot;
           houghSpace.at<int>(rho, thetaIndex)++;
@@ -180,33 +179,33 @@ vector<Vec2f> houghLines(Mat &input, int threshold = 80) {
   }
 
   cv::imwrite("myhough.png", houghSpace*5);
-  vector<Point> houghLines;
+  vector<Vec2f> houghLines;
   // Search through the accumulator and find the maximums
-  for (int y = 1; y < numberOfRadii-1; y++) {
-    for (int x = 1; x < numberOfAngles-1; x++) {
-      int valueAtPoint = houghSpace.at<int>(y,x);
-      if (    houghSpace.at<int>(y,x) > threshold 
-          &&  houghSpace.at<int>(y,x) > houghSpace.at<int>(y,x-1)
-          &&  houghSpace.at<int>(y,x) >= houghSpace.at<int>(y,x+1)
-          &&  houghSpace.at<int>(y,x) > houghSpace.at<int>(y-1,x)
-          &&  houghSpace.at<int>(y,x) >= houghSpace.at<int>(y+1,x)
+  for (int rho = 1; rho < numberOfRadii-1; rho++) {
+    for (int theta = 1; theta < numberOfAngles-1; theta++) {
+      int valueAtPoint = houghSpace.at<int>(rho,theta);
+      if (    houghSpace.at<int>(rho,theta) > threshold 
+          &&  houghSpace.at<int>(rho,theta) > houghSpace.at<int>(rho,theta-1)
+          &&  houghSpace.at<int>(rho,theta) >= houghSpace.at<int>(rho,theta+1)
+          &&  houghSpace.at<int>(rho,theta) > houghSpace.at<int>(rho-1,theta)
+          &&  houghSpace.at<int>(rho,theta) >= houghSpace.at<int>(rho+1,theta)
       ) {
-        houghLines.push_back(houghSpace.at<Point>(y,x));
+        std::cout << "line with rho: " << rho - imageHypot << std::endl;
+        std::cout << "line with theta: " << theta * thetaStep<< std::endl;
+        Vec2f line = Vec2f(theta * thetaStep, rho-imageHypot);
+        houghLines.push_back(line);
       }
     }
   }
-  std::cout << houghLines.size() << std::endl;
 
-  vector<Vec2f> lines;
-  for (Point line : houghLines) {
-    lines.push_back(Vec2f(line.x, line.y));
-  }
- 
   Mat output;
   input.copyTo(output);
-  for( size_t i = 0; i < lines.size(); i++ )
+  for( size_t i = 0; i < houghLines.size(); i++ )
   {
-      float rho = lines[i][0], theta = lines[i][1];
+      float rho = houghLines[i][1];
+      std::cout << "Drawing line with rho: " << rho << std::endl;
+      float theta = houghLines[i][0];
+      std::cout << "Drawing line with theta: " << theta << std::endl;
       Point pt1, pt2;
       double a = cos(theta), b = sin(theta);
       double x0 = a*rho, y0 = b*rho;
@@ -218,7 +217,7 @@ vector<Vec2f> houghLines(Mat &input, int threshold = 80) {
   }
   cv::imwrite("myhough-output.png", output);
 
-  return lines;
+  return houghLines;
 }
 
 void hough(Mat &input) {
