@@ -10,13 +10,12 @@
 #include "opencv2/core/core.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+#include <iostream>
+#include <stdio.h>
 
 #include <sstream>
 #include <fstream>
 #include <string>
-#include <iostream>
-#include <stdio.h>
-#include <math.h>
 
 using namespace std;
 using namespace cv;
@@ -136,48 +135,27 @@ void sobel(cv::Mat &image) {
     cv::imwrite("grad-direction.png", direction);
 }
 
-vector<Vec2f> houghLines(Mat &input, int threshold = 150, double rhoStep = 1.0f, double thetaStep = CV_PI/180) {
-
-  Mat input_edges, input_gray;
-  cvtColor( input, input_gray, CV_BGR2GRAY);
-  Canny(input_gray, input_edges, 50, 200, 3);
+vector<Vec2f> houghLines(Mat &input, int threshold = 150, double rhoStep = 1, double thetaStep = CV_PI/180) {
 
   double width = input.size().width, height = input.size().height;
 
-  double rhoMax = sqrt(width * width + height * height) / 2;
-  double thetaMax = CV_PI;
-
-  //int numberOfRadii = std::round(std::sqrt(width * width +  height * height) / rhoStep);
-  int numberOfRadii = std::round(rhoMax / rhoStep);
-  int numberOfAngles = std::round(thetaMax / thetaStep);
+  int numberOfRadii = std::round(std::sqrt((width * width +  height * height) / rhoStep));
+  int numberOfAngles = std::round(CV_PI / thetaStep);
 
   // Create an empty mat (initally no lines so all zero)
-  cv::imwrite("input_edges_myhough.png", input_edges);
-  Mat houghSpace = Mat::zeros(numberOfAngles, numberOfRadii, CV_32SC1);
+  Mat houghSpace = Mat::zeros(numberOfRhos, numberOfAngles, CV_32S);
 
   // For every pixel in the image 
-  for (int y = 0; y < input.rows; y++) {
-    for (int x = 0; x < input.cols; x++) {
+  for (int y = 0; y < input.size().height; y++) {
+    for (int x = 0; x < input.size().width; x++) {
       
       // If the pixel is not empty (i.e on an edge)
-      if (input_edges.at<int>(y, x) != 0) {
-        
+      if (input.at<double>(y, x) != 0) {
         // For every angle
-        for (double thetaIndex = 0; thetaIndex < numberOfAngles; thetaIndex++) {
-
-          double theta = thetaIndex * thetaMax / numberOfAngles;
-          double rho = x * std::cos(theta) + y * std::sin(theta);
-          int rhoIndex = numberOfRadii * rho / rhoMax;
-          // Add 1 to the hough space (indicating the point is on that line)
-          houghSpace.at<int>(thetaIndex, rhoIndex)++;
-        }
+        for (int i = 0; i < numberOfAngles)
       }
     }
   }
-
-  cv::imwrite("myhough.png", houghSpace);
-  vector<Vec2f> lines;
-  return lines;
 }
 
 void hough(Mat &input) {
@@ -328,9 +306,8 @@ int main( int argc, const char** argv )
 	Mat frame = imread(argv[1], CV_LOAD_IMAGE_COLOR);
 
     // 0.2 do the things
-    houghLines(frame);
     hough(frame);
-    //houghCircles(frame);
+    houghCircles(frame);
 
     if (frame.empty()) {
       printf("Error loading image\n");
