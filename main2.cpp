@@ -12,6 +12,19 @@
 #include <math.h>
 #include <algorithm>
 
+
+std::vector<std::string> split(std::string line, std::string delimiter) {
+  size_t pos = 0;
+  std::vector<std::string> tokens;
+  while ((pos = line.find(delimiter)) != std::string::npos) {
+      tokens.push_back(line.substr(0, pos));
+      line.erase(0, pos + delimiter.length());
+  }
+  tokens.push_back(line);
+  return tokens;
+}
+
+
 cv::Mat convolution(cv::Mat &input, cv::Mat &kernel) {
 
     cv::Mat output;
@@ -168,7 +181,7 @@ std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 20) {
     for (int y = 0; y < height; y++) {
       
       // If the pixel is not empty (i.e on an edge)
-      if (gradMag.at<float>(y, x) >= 255) {
+      if (gradMag.at<float>(y, x) >= 80) {
         
         // For every radius we are checking
         for (int r = minRadius; r < maxRadius; r++) {
@@ -210,20 +223,150 @@ std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 20) {
 
   std::vector<cv::Vec3i> circles;
   // For every pixel in the hough space
-  for (int x = 0; x < width; x++) {
-    for (int y = 0; y < height; y++) {
-      for (int r = minRadius; r < maxRadius; r++) {
-        if (houghSpace[x][y][r] > threshold) {
-          circles.push_back(cv::Vec3i(x, y, r));
+  while (true) {
+
+    int currentMax = 0;
+    cv::Vec3i circleAtMax;
+
+    for (int x = 0; x < width; x++) {
+      for (int y = 0; y < height; y++) {
+        for (int r = minRadius; r < maxRadius; r++) {
+          if (houghSpace[x][y][r] > currentMax) {
+            currentMax = houghSpace[x][y][r];
+            circleAtMax = cv::Vec3i(x, y, r);
+          }
         }
       }
     }
+
+    // Black out pixles around the peak to avoid clustering
+    if (currentMax > threshold) {
+      circles.push_back(circleAtMax);
+      int blackOutRadius = 20;
+      for ( float x = circleAtMax[0] - blackOutRadius; x <= circleAtMax[0] + blackOutRadius; x++) {
+        for ( float y = circleAtMax[1] - blackOutRadius; y <= circleAtMax[1] + blackOutRadius; y++) {
+          for ( float r = circleAtMax[2] - blackOutRadius; r <= circleAtMax[2] + blackOutRadius; r++) {
+            if (x >= 0 && y>=0 && r >= 0 && x < width && y < height && r < maxRadius) {
+              houghSpace[(int)x][(int)y][(int)r] = 0.0f;
+            }
+          }
+        }
+      }
+    }
+    else {
+      break;
+    }
+
   }
   
   std::cout << "Drew circles" << std::endl;
 
   return circles;
 }
+
+std::vector<cv::Rect> get_true_face(std::string path) {
+
+  // Read in file
+  std::ifstream infile(path.c_str());
+ 
+  if (!infile) {
+    std::cerr << "Can't open input file " << path << std::endl; 
+  }
+
+  std::string line;
+  std::string token;
+  std::vector<cv::Rect> faces;
+
+  while(getline(infile, line)) {
+    std::vector<std::string> tokens = split(line, ",");
+    
+    int x = std::stoi(tokens[0]);
+    int y = std::stoi(tokens[1]);
+    int width = std::stoi(tokens[2]);
+    int height = std::stoi(tokens[3]);
+    
+    faces.push_back(cv::Rect(x, y, width, height));
+  }
+
+  return faces;
+}
+
+void draw(cv::Rect rect, cv::Mat frame, cv::Scalar colour) {
+    rectangle(frame, rect, colour, 2);
+}
+
+void draw(std::vector<cv::Rect> rects, cv::Mat frame, cv::Scalar colour) {
+  for ( int i = 0; i < rects.size(); i++ ) {
+    draw(rects[i], frame, colour);
+  }
+}
+
+float intersection_over_union(cv::Rect detected_rect, cv::Rect true_rect) {
+  return (detected_rect & true_rect).area() / (float)(detected_rect | true_rect).area();
+}
+
+
+int number_of_correctly_detected_faces(std::vector<cv::Rect> detected_rects, std::vector<cv::Rect> true_rects, float threshold = 0.6) {
+  int number_of_detected_faces = 0; 
+  for (int i = 0; i < true_rects.size(); i++) {
+    float max_iou = 0;
+    for (int j = 0; j < detected_rects.size(); j++) {
+      float iou = intersection_over_union(detected_rects[j], true_rects[i]);
+      //cout << "IOU: "<< iou << endl;
+      if (iou > max_iou) {
+        max_iou = iou;
+      }
+    }
+    if (max_iou > threshold) {
+      number_of_detected_faces++;
+    } else {
+      std::cout << "Image at index " << i << " rejected" << std::endl;
+    }
+  }
+  return number_of_detected_faces;
+}
+
+
+float true_positive_rate(std::vector<cv::Rect> detected_rects, std::vector<cv::Rect> true_rects) {
+  if (true_rects.size() == 0) {
+    std::cout << "No true faces provided" << std::endl;
+    return 1;
+  }
+  return (float)number_of_correctly_detected_faces(detected_rects, true_rects) / (float)true_rects.size();
+}
+
+
+float f1_score(std::vector<cv::Rect> detected_rects, std::vector<cv::Rect> true_rects) {
+  float recall = true_positive_rate(detected_rects, true_rects);
+  float precision = number_of_correctly_detected_faces(detected_rects, true_rects) / (float)detected_rects.size();
+  if (precision + recall == 0) {
+    return 0;
+  }
+  return (float)2 * (precision * recall) / (precision + recall);
+}
+
+std::vector<cv::Rect> detectFaces( cv::Mat frame )
+{
+    std::vector<cv::Rect> faces;
+    cv::Mat frame_gray;
+
+	// 1. Prepare Image by turning it into Grayscale and normalising lighting
+	cvtColor( frame, frame_gray, CV_BGR2GRAY);
+	equalizeHist( frame_gray, frame_gray );
+
+	// 2. Perform Viola-Jones Object Detection 
+    //cascade.detectMultiScale( frame_gray, faces, 1.1, 1, 0|CV_HAAR_SCALE_IMAGE, cv::Size(50, 50), cv::Size(500,500) );
+
+    // 3. Print number of Faces found
+    std::cout << faces.size() << std::endl;
+
+    return faces;
+}
+
+//std::vector<cv::Rect> voilaJonesDartDetection() {
+//  if( !cascade.load( cascade_name ) ){ printf("--(!)Error loading\n"); return -1; };
+//  std::vector<cv::Rect> detected_faces = detectFaces( frame );
+//}
 
 
 int
@@ -244,7 +387,7 @@ main (int argc, char **argv)
     cv::imwrite("gradmag.png", gradM);
 
     std::cout << "REady" << std::endl;
-    std::vector<cv::Vec3i> circles = houghCircles(image_gray, 18);
+    std::vector<cv::Vec3i> circles = houghCircles(image_gray, 35);
     std::cout << "Circles length:" << circles.size() << std::endl;
     
     cv::Mat output;
