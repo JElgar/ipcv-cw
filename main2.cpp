@@ -345,28 +345,19 @@ float f1_score(std::vector<cv::Rect> detected_rects, std::vector<cv::Rect> true_
   return (float)2 * (precision * recall) / (precision + recall);
 }
 
-std::vector<cv::Rect> detectFaces( cv::Mat frame )
-{
-    std::vector<cv::Rect> faces;
-    cv::Mat frame_gray;
-
-	// 1. Prepare Image by turning it into Grayscale and normalising lighting
-	cvtColor( frame, frame_gray, CV_BGR2GRAY);
-	equalizeHist( frame_gray, frame_gray );
-
-	// 2. Perform Viola-Jones Object Detection 
-    //cascade.detectMultiScale( frame_gray, faces, 1.1, 1, 0|CV_HAAR_SCALE_IMAGE, cv::Size(50, 50), cv::Size(500,500) );
-
-    // 3. Print number of Faces found
-    std::cout << faces.size() << std::endl;
-
-    return faces;
+std::vector<cv::Rect> voilaJonesDartDetection(cv::Mat &input) {
+  cv::String cascade_name = "dartcascade/cascade.xml";
+  cv::CascadeClassifier cascade;
+  if( !cascade.load( cascade_name ) ){ 
+    printf("--(!)Error loading\n"); 
+    std::vector<cv::Rect> rects;
+    return rects;
+  }
+    
+  std::vector<cv::Rect> faces;
+  cascade.detectMultiScale( input, faces, 1.1, 1, 0|CV_HAAR_SCALE_IMAGE, cv::Size(50, 50), cv::Size(500,500) );
+  return faces;
 }
-
-//std::vector<cv::Rect> voilaJonesDartDetection() {
-//  if( !cascade.load( cascade_name ) ){ printf("--(!)Error loading\n"); return -1; };
-//  std::vector<cv::Rect> detected_faces = detectFaces( frame );
-//}
 
 
 int
@@ -386,25 +377,28 @@ main (int argc, char **argv)
     cv::imwrite("graddirection.png", gradD);
     cv::imwrite("gradmag.png", gradM);
 
-    std::cout << "REady" << std::endl;
+    // -- Hough Jones -- //
     std::vector<cv::Vec3i> circles = houghCircles(image_gray, 35);
-    std::cout << "Circles length:" << circles.size() << std::endl;
-    
-    cv::Mat output;
-    image.copyTo(output);
+    cv::Mat circlesOutput;
+    image.copyTo(circlesOutput);
     for (cv::Vec3i circle : circles) {
       cv::Point center = cv::Point(circle[0], circle[1]);
       // circle center
-      cv::circle( output, center, 1, cv::Scalar(0,100,100), 3, 8);
+      cv::circle( circlesOutput, center, 1, cv::Scalar(0,100,100), 3, 8);
       // circle outline
       int radius = circle[2];
-      cv::circle( output, center, radius, cv::Scalar(255,0,255), 3, 8);
+      cv::circle( circlesOutput, center, radius, cv::Scalar(255,0,255), 3, 8);
     }
-
     std::cout << "Circles length:" << circles.size() << std::endl;
-    cv::imwrite("cirlce-hough-output.jpg", output);
-  
-    std::cout << "Alls good" << std::endl;
+    cv::imwrite("cirlce-hough-output.jpg", circlesOutput);
+   
+    // -- Viola Jones -- //
+    std::vector<cv::Rect> boards = voilaJonesDartDetection(image_gray);
+    cv::Mat vjOutput;
+    image.copyTo(vjOutput);
+    draw(boards, vjOutput, cv::Scalar(0, 0, 255));
+    std::cout << "Boards length:" << boards.size() << std::endl;
+    cv::imwrite("vj-output.jpg", vjOutput);
 
     // free memory
     image.release();
