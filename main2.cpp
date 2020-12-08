@@ -105,14 +105,33 @@ cv::Mat gradientDirection (cv::Mat &input) {
     return grad;
 }
 
+void scaling( int ***hough, int width, int height, int maxRadius){
+	int max = 0;
+	// find the max
+	for (int x=0; x< width; x++){
+		for(int y=0; y< height; y++){
+			for (int r=0; r< maxRadius; r++){
+				if (hough[x][y][r] > max){
+					max = hough[x][y][r];
+				}	
+			}
+		}
+	}
+	// scale the thing
+	for (int x=0; x< width; x++){
+		for(int y=0; y< height; y++){
+			for (int r=0; r< maxRadius; r++){
+				hough[x][y][r] = ( hough[x][y][r] * 255 ) / max ;	
+			}
+		}
+	}
+}
 
 
-std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 28) {
+std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 20) {
   
   cv::Mat input_edges, input_gray, magnitude;
   input_gray = input;
-  cv::imwrite("input_edges_myhoughcircles.png", input_edges);
-
   cv::Mat gradMag = gradientMagnitude(input_gray);
   cv::Mat gradDir = gradientDirection(input_gray);
 
@@ -122,7 +141,7 @@ std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 28) {
   int minRadius = 30;
   int rangeRadius = maxRadius - minRadius;
 
-  int thetaErrorRange = 15;
+  int thetaErrorRange = 13;
 
   // 3D array to store hough values
   std::cout << "Creating array" << std::endl;
@@ -174,7 +193,7 @@ std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 28) {
   std::cout << "Got hough space" << std::endl;
 
   std::cout << "Scaling" << std::endl;
-  //nicolesScaling(houghSpace, maxRadius, width, height);
+  //scaling(houghSpace, width, height, maxRadius);
   std::cout << "Scaled" << std::endl;
 
   // Covert the houghSpace into an image so we can have a look
@@ -200,6 +219,8 @@ std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 28) {
       }
     }
   }
+  
+  std::cout << "Drew circles" << std::endl;
 
   return circles;
 }
@@ -214,11 +235,7 @@ main (int argc, char **argv)
 
     cv::cvtColor( image, image_gray, CV_BGR2GRAY);
     cv::equalizeHist( image_gray, image_gray);
-    cv::medianBlur(image_gray, image_gray, 5);
-
-
-    //imageDx(image_gray);
-    //imageDy(image_gray);
+    //cv::medianBlur(image_gray, image_gray, 5);
 
     cv::Mat gradD = gradientDirection(image_gray);
     cv::Mat gradM = gradientMagnitude(image_gray);
@@ -227,7 +244,8 @@ main (int argc, char **argv)
     cv::imwrite("gradmag.png", gradM);
 
     std::cout << "REady" << std::endl;
-    std::vector<cv::Vec3i> circles = houghCircles(image_gray);
+    std::vector<cv::Vec3i> circles = houghCircles(image_gray, 18);
+    std::cout << "Circles length:" << circles.size() << std::endl;
     
     cv::Mat output;
     image.copyTo(output);
@@ -242,7 +260,8 @@ main (int argc, char **argv)
 
     std::cout << "Circles length:" << circles.size() << std::endl;
     cv::imwrite("cirlce-hough-output.jpg", output);
-
+  
+    std::cout << "Alls good" << std::endl;
 
     // free memory
     image.release();
