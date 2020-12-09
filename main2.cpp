@@ -276,8 +276,8 @@ std::vector<cv::Vec2f> houghLines(cv::Mat &input) {
   int numberOfAngles = 360;
 
   int gradientThreshold = 180;
-  int deltaThetaRange = 180;
-  int houghThreshold = 40;
+  int thetaRange = 180;
+  int houghThreshold = 120;
 
   cv::Mat houghSpace = cv::Mat::zeros(numberOfRadii, numberOfAngles, CV_32FC1);
   std::cout << "Hough space height: " << houghSpace.size().height << std::endl;
@@ -289,19 +289,8 @@ std::vector<cv::Vec2f> houghLines(cv::Mat &input) {
       
       // If the pixel is above gradient mag threshold (i.e on an edge)
       if (gradMag.at<float>(y, x) > gradientThreshold) {
-        
-        double gradientDirection = gradDir.at<float>(y, x);
-        double gradientTheta = gradientDirection;
-        // If deltaTheta is negative do a loop to make it positive
-        // covert deltaTheta into radians
-        gradientTheta *= ((float)180 / CV_PI);
-        if (gradientTheta < 0) {
-          gradientTheta += 360;
-        }
 
-        std::cout << "Gradient theta is: " << (int)gradientTheta << std::endl;
-
-        for (int theta = (int)gradientTheta - deltaThetaRange; theta <= (int)gradientTheta + deltaThetaRange; theta++) {
+        for (int theta = -thetaRange; theta < thetaRange; theta++) {
           int rho = x * std::cos(theta * (CV_PI / (double)180)) + y * std::sin(theta * (CV_PI / (double)180)) + width + height;
           //std::cout << rho << ", " << theta << std::endl;
           houghSpace.at<float>(rho, theta)++;
