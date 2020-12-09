@@ -156,7 +156,7 @@ std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 14) {
   int height = input.rows, width = input.cols;
 
   int maxRadius = 120;
-  int minRadius = 35;
+  int minRadius = 30;
   int rangeRadius = maxRadius - minRadius;
 
   int thetaErrorRange = 13;
@@ -335,7 +335,7 @@ float intersection_over_union(cv::Vec3i circle, cv::Rect rect) {
 }
 
 
-int number_of_correctly_detected_faces(std::vector<cv::Rect> detected_rects, std::vector<cv::Rect> true_rects, float threshold = 0.6) {
+int number_of_correctly_detected_faces(std::vector<cv::Rect> detected_rects, std::vector<cv::Rect> true_rects, float threshold = 0.55) {
   int number_of_detected_faces = 0; 
   for (int i = 0; i < true_rects.size(); i++) {
     float max_iou = 0;
@@ -349,7 +349,7 @@ int number_of_correctly_detected_faces(std::vector<cv::Rect> detected_rects, std
     if (max_iou > threshold) {
       number_of_detected_faces++;
     } else {
-      std::cout << "Image at index " << i << " rejected" << std::endl;
+      std::cout << "Image at index " << i << " rejected with IOIU " << max_iou << std::endl;
     }
   }
   return number_of_detected_faces;
@@ -388,7 +388,7 @@ std::vector<cv::Rect> voilaJonesDartDetection(cv::Mat &input) {
   return faces;
 }
 
-std::vector<cv::Rect> detectDartboards(cv::Mat image_gray, float threshold = 0.4) {
+std::vector<cv::Rect> detectDartboards(cv::Mat image_gray, float threshold = 0.25) {
 
   // Do vj and hough and store results
   std::vector<cv::Vec3i> hough_boards = houghCircles(image_gray, 35);
@@ -407,11 +407,18 @@ std::vector<cv::Rect> detectDartboards(cv::Mat image_gray, float threshold = 0.4
         max_hough_board = h_board; 
       }
     }
-    std::cout << max_iou << std::endl;
+    std::cout << "The max_iou in thing is: " << max_iou << std::endl;
     if (max_iou > threshold) {
-      combined_boards.push_back(circleToRect(max_hough_board));
+
+      // Push the thing with the max area
+      if(CV_PI * max_hough_board[2] * max_hough_board[2] > vj_board.area()) {
+        combined_boards.push_back(circleToRect(max_hough_board));
+      } else {
+        combined_boards.push_back(vj_board);
+      }
     } 
   }
+  
   return combined_boards;
 }
 
@@ -427,12 +434,12 @@ main (int argc, char **argv)
     cv::equalizeHist( image_gray, image_gray);
     //cv::medianBlur(image_gray, image_gray, 5);
 
-    cv::Mat gradD = gradientDirection(image_gray);
-    cv::Mat gradM = gradientMagnitude(image_gray);
-    cv::imwrite("graddirection.png", gradD * 10);
-    cv::imwrite("gradmag.png", gradM);
+    //cv::Mat gradD = gradientDirection(image_gray);
+    //cv::Mat gradM = gradientMagnitude(image_gray);
+    //cv::imwrite("graddirection.png", gradD * 10);
+    //cv::imwrite("gradmag.png", gradM);
 
-    // -- Hough -- //
+    //// -- Hough -- //
     std::vector<cv::Vec3i> circles = houghCircles(image_gray, 35);
     cv::Mat circlesOutput;
     image.copyTo(circlesOutput);
@@ -440,7 +447,7 @@ main (int argc, char **argv)
     std::cout << "Circles length:" << circles.size() << std::endl;
     cv::imwrite("cirlce-hough-output.jpg", circlesOutput);
    
-    // -- Viola Jones -- //
+    //// -- Viola Jones -- //
     std::vector<cv::Rect> boards = voilaJonesDartDetection(image_gray);
     cv::Mat vjOutput;
     image.copyTo(vjOutput);
@@ -451,8 +458,21 @@ main (int argc, char **argv)
     std::vector<cv::Rect> finalBoards = detectDartboards(image_gray);
     cv::Mat finalOutput;
     image.copyTo(finalOutput);
-    draw(finalBoards, finalOutput, cv::Scalar(0, 255, 0));
+    draw(finalBoards, finalOutput, cv::Scalar(0, 0, 255));
     cv::imwrite("final-output.jpg", finalOutput);
+
+    // -- Compare with true values -- //
+    std::vector<cv::Rect> true_faces;
+    if (argc > 2) {
+      true_faces = get_true_face(argv[2]);
+    }
+    std::cout << "Number of true faces: " <<  true_faces.size() << std::endl;
+    std::cout << "NUmber of final detections: " <<  finalBoards.size() << std::endl;
+    std::cout << "TPR: " << true_positive_rate(finalBoards, true_faces) << std::endl;
+    std::cout << "F1: " << f1_score(finalBoards, true_faces) << std::endl;
+   
+    draw(true_faces, finalOutput, cv::Scalar(0, 255, 0));
+    cv::imwrite("final-output-true.jpg", finalOutput);
 
     // free memory
     image.release();

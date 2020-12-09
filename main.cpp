@@ -573,8 +573,8 @@ int main( int argc, const char** argv )
     // 5. Draw box around faces found
     //draw(detected_faces, frame, Scalar(0, 0, 255));
   
-    //cout << "TPR: " << true_positive_rate(detected_faces, true_faces) << endl;
-    //cout << "F1: " << f1_score(detected_faces, true_faces) << endl;
+    cout << "TPR: " << true_positive_rate(detected_faces, true_faces) << endl;
+    cout << "F1: " << f1_score(detected_faces, true_faces) << endl;
 
 	//// 6. Save Result Image
 	//imwrite( "detected.jpg", frame );

@@ -42,8 +42,8 @@ the other gives over 0.9.
   \centerline{\includegraphics[width=\linewidth]{dart14-face.jpg}\par}
   \centerline{\includegraphics[width=\linewidth]{dart15-face.jpg}\par}
 \end{multicols}
-\label{fig:vjface}
 \captionof{figure}{Viola-Jones face detection (green) with ground truth (red)}
+\label{fig:vjface}
 
 
 \begin{tabular}{ |p{2cm}||p{2cm}|p{2cm}| }
@@ -79,33 +79,76 @@ tolerance for the intersection over area, IOU.
 
 \section{Dart board detection}
 
-\begin{tikzpicture}
-\label{tprvsfprtraining}
-\begin{axis}[
-    title={TPR vs FPR Training},
-    xlabel={FPR},
-    ylabel={TPR},
-    xmin=0, xmax=1,
-    ymin=0, ymax=1,
-    xtick={0, 0.2, 0.4, 0.6, 0.8, 1.0 },
-    ytick={0, 0.2, 0.4, 0.6, 0.8, 1.0 },
-    legend pos=north west,
-    ymajorgrids=true,
-    grid style=dashed,
-]
+\begin{multicols}{2}
 
-\addplot[
-    color=red,
-    only marks, 
-    mark=*,
+  \resizebox{\columnwidth}{!}{
+  
+    \begin{tikzpicture}
+    \begin{axis}[
+        title={TPR vs FPR throughout training},
+        xlabel={FPR},
+        ylabel={TPR},
+        xmin=0, xmax=1,
+        ymin=0, ymax=1,
+        xtick={0, 0.2, 0.4, 0.6, 0.8, 1.0 },
+        ytick={0, 0.2, 0.4, 0.6, 0.8, 1.0 },
+        legend pos=north west,
+        ymajorgrids=true,
+        grid style=dashed,
     ]
-    coordinates {
-      (1,1)(0.0163415,1)(0.000237497,1)
-    };
+  
+    \addplot[
+        color=red,
+        mark=*,
+        ]
+        coordinates {
+          (1,1)(0.0163415,1)(0.000237497,1)
+        };
+        
+    \end{axis}
+    \end{tikzpicture}
+  }
+ 
+
+  \resizebox{\columnwidth}{!}{
+  
+    \begin{tikzpicture}
+    \begin{axis}[
+        title={TPR and FPR vs training step},
+        xlabel={Stage},
+        ylabel={Value},
+        xmin=0.8, xmax=3.2,
+        ymin=-0.05, ymax=1.05,
+        xtick={1, 2, 3},
+        ytick={0, 0.2, 0.4, 0.6, 0.8, 1.0 },
+        legend style={at={(0.97,0.5)},anchor=east},
+        ymajorgrids=true,
+        grid style=dashed,
+    ]
     
-\end{axis}
-\label{fig:picture}
-\end{tikzpicture}
+    \addplot[
+        color=red,
+        mark=*,
+        ]
+        coordinates {
+          (1,1)(2, 0.0163415)(3, 0.000237497)
+        };
+    \addlegendentry{FPR}
+    
+    \addplot[
+        color=blue,
+        mark=*,
+        ]
+        coordinates {
+          (1,1)(2,1)(3,1)
+        };
+    \addlegendentry{TPR}
+        
+    \end{axis}
+    \end{tikzpicture}
+
+  }
+\end{multicols}{2}
 
 Figure \ref{tprvsfprtraining} shows the change in FPR and TPR throughout the
 training process. At the beginning of the training all images are accepted
@@ -122,6 +165,8 @@ decreasing.
     \includegraphics[width=\linewidth]{dart6-dart.jpg}\par
     \includegraphics[width=\linewidth]{dart4-dart.jpg}\par
 \end{multicols}
+\captionof{figure}{Viola-Jones dartboard detection with true values}
+\label{tab:vjdartsimages}
 
 
 \begin{tabular}{ |p{2cm}||p{2cm}|p{2cm}| }
@@ -149,13 +194,14 @@ decreasing.
  Average& 0.333333  & 0.133232    \\ 
  \hline
 \end{tabular}
-\label{table:vjdarts}
+\captionof{table}{Viola-Jones face detection (green) with ground truth (red)}
+\label{tab:vjdartstable}
 
 
-The average values in Table \ref{vjdarts}, show the unreliable results of
+The average values in Table \ref{tab:vjdartstable}, show the unreliable results of
 the cascade for detecting dart boards.  It not only has a very low TPR and also
 a very low F1-score suggesting there are many missed dart boards as well as
-regions falsely classified. The images in Figure \ref{dartdetectionimages} show
+regions falsely classified. The images in Figure \ref{tab:vjdartsimages} show
 the wide range of results from the classifier. a and b show successful
 classifications yet b and c show the high number of false positives. It is also
 noteworthy that the TPR values achieved during training were far higher than
@@ -163,9 +209,9 @@ the average achieved during testing. This is as a result of the method used to
 generate positive images. These took one image of a dart board and generated
 variations (via movements/rotations) on that image. This means when classifying
 different types of dartboards of those with objects in the way (such as
-\ref{dartresults} c) the classifier performs far worse.
+\ref{tab:vjdartsimages} c) the classifier performs far worse.
 
-\section{Integrating Viola-Jones with Shape detection}
+\section{Combining Viola-Jones with hough circle detection}
 
 From the above section it is clear that the Viola Jones detector is not well
 suited to detecting dart boards and especially not to detecting the circular
@@ -195,16 +241,51 @@ large angles to the camera or with objects blocking sections of the circle.
 This can result in a reduction in the TPR rate of the overall detector in
 exchange for the reduction in the number of false positives.
 
-\begin{figure}
-\label{houghdetails}
-\begin{tabular}{ccc}
-\subfloat[gradient magnitude]{\includegraphics[width = 1.1in]{houghvj/8/gradmag.png}} &
-\subfloat[gradient direction]{\includegraphics[width = 1.1in]{houghvj/8/graddirection.png}} &  
-\subfloat[2D representation of hough space]{\includegraphics[width = 1.1in]{houghvj/8/cirlce-hough-space.jpg}} &
-\subfloat[Output]{\includegraphics[width = 1.1in]{houghvj/8/cirlce-hough-space.jpg}} &
+\begin{multicols}{4}
+  \centerline{\includegraphics[width=\linewidth]{houghvj/8/gradmag.png}\par}
+  \centerline{\includegraphics[width=\linewidth]{houghvj/8/graddirection.png}\par}
+  \centerline{\includegraphics[width=\linewidth]{houghvj/8/cirlce-hough-space.jpg}\par}
+  \centerline{\includegraphics[width=\linewidth]{houghvj/8/final-output.jpg}\par}
+\end{multicols}
+\captionof{figure}{Hough circle detection on dart8.jpg}
+\label{fig:hough1results}
+
+\begin{multicols}{4}
+  \centerline{\includegraphics[width=\linewidth]{houghvj/8/gradmag.png}\par}
+  \centerline{\includegraphics[width=\linewidth]{houghvj/8/graddirection.png}\par}
+  \centerline{\includegraphics[width=\linewidth]{houghvj/8/cirlce-hough-space.jpg}\par}
+  \centerline{\includegraphics[width=\linewidth]{houghvj/8/final-output.jpg}\par}
+\end{multicols}
+\captionof{figure}{Hough circle detection on dart8.jpg}
+\label{fig:hough2results}
+
+\begin{tabular}{ |p{1.3cm}||p{1.3cm}|p{1.3cm}|p{1.3cm}|p{1.3cm}| }
+ \hline
+ \multicolumn{5}{|c|}{Frontal face detection results} \\
+ \hline
+ Image name & TPR & F1 & \(\Delta\) TPR & \(\Delta\) F1 \\
+ \hline
+ dart1  & 1  & 1 \\
+ dart2  & 1  & 0.5       \\
+ dart3  & 1  & 0.5        \\
+ dart4  & 0  & 0          \\
+ dart5  & 1  & 1          \\
+ dart6  & 0  & 0 \\
+ dart7  & 1  & 0.5          \\
+ dart8  & 0.5  & 0.666667          \\
+ dart9  & 0  & 0          \\
+ dart10 & 0  & 0          \\
+ dart11 & 0.333333  & 0.5          \\
+ dart12 & 0  & 0          \\
+ dart13 & 1  & 0.4          \\
+ dart14 & 1  & 0.5          \\
+ dart15 & 1  & 1        \\
+ \hline
+ Average& 0.333333  & 0.133232    \\ 
+ \hline
 \end{tabular}
-\caption{Hough}
-\end{figure}
+\captionof{table}{Viola-Jones face detection (green) with ground truth (red)}
+\label{tab:vjdartstable}
 
 
 \begin{tikzpicture}[node distance=1cm]

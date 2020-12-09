@@ -1,12 +1,11 @@
 # Fdb version 3
-["pdflatex"] 1607517260 "report.tex" "report.pdf" "report" 1607517260
+["pdflatex"] 1607523927 "report.tex" "report.pdf" "report" 1607523928
   "/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/jknappen/ec/tcrm1000.tfm" 1136768653 1536 e07581a4bb3136ece9eeb4c3ffab8233 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/public/cm/cmbx10.tfm" 1136768653 1328 c834bbb027764024c09d3d2bf908b5f0 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm" 1136768653 1324 c910af8c371558dc20f2d7822f66fe64 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/public/cm/cmr12.tfm" 1136768653 1288 655e228510b4c2a1abe905c368440826 ""
-  "/usr/local/texlive/2020/texmf-dist/fonts/tfm/public/cm/cmr8.tfm" 1136768653 1292 21c1c5bfeaebccffdb478fd231a0997d ""
   "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb" 1248133631 34811 78b52f49e893bcba91bd7581cdc144c0 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb" 1248133631 32080 340ef9bf63678554ee606688e7b5339d ""
   "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb" 1248133631 36299 5f9df58c2139e7edcf37c8fca4bd384d ""
@@ -155,10 +154,11 @@
   "assets//dart5-face.jpg" 1606578771 212421 5899fa9da9d68f301af034b0ec60a1c1 ""
   "assets//dart6-dart.jpg" 1607275013 93528 3396e203cf332b2983dcd7f86228ffce ""
   "assets//houghvj/8/cirlce-hough-space.jpg" 1607512517 177136 25698c9a4d3ad771aa165cf7a77cd2e4 ""
+  "assets//houghvj/8/final-output.jpg" 1607509629 259279 48803b2aa7898978218e0c210b510c2d ""
   "assets//houghvj/8/graddirection.png" 1607512005 427812 953fc9c9aa244b70ca092e86bc289a52 ""
   "assets//houghvj/8/gradmag.png" 1607508884 536081 a38ed8ca442e0df5625abf4bd8062822 ""
-  "report.aux" 1607517250 672 07ee001ea2cd80377bdd5dd46541bbc1 "pdflatex"
-  "report.tex" 1607517260 8864 88174fdc00a6d257c87ef09ba6d1d36a ""
+  "report.aux" 1607523928 1542 057869677877f62190c7d1967d05531f "pdflatex"
+  "report.tex" 1607523927 11193 2588c68f7f7950d2fb90181c917ca6e2 ""
   (generated)
   "report.aux"
   "report.pdf"
