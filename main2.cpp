@@ -119,6 +119,7 @@ cv::Mat gradientDirection (cv::Mat &input) {
 }
 
 
+// Returns maximum value in hough space
 int max(int ***houghSpace, int width, int height, int maxRadius) {
   int max = 0;
   for (int x=0; x< width; x++){
@@ -133,20 +134,8 @@ int max(int ***houghSpace, int width, int height, int maxRadius) {
   return max;
 }
 
-void scaling( int ***houghSpace, int width, int height, int maxRadius){
 
-  int max_hough_value = max(houghSpace, width, height, maxRadius);
-  for (int x=0; x< width; x++){
-    for(int y=0; y< height; y++){
-      for (int r=0; r< maxRadius; r++){
-        houghSpace[x][y][r] = (houghSpace[x][y][r] / max_hough_value) * 255;	
-      }
-    }
-  }
-}
-
-
-std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 14) {
+std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 14, bool draw = false) {
   
   cv::Mat input_edges, input_gray, magnitude;
   input_gray = input;
@@ -161,6 +150,10 @@ std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 14) {
 
   int thetaErrorRange = 13;
 
+  // Instead of using a thersholded magnitude image here we simply check the value is above a give threshold 
+  int edgeThreshold = 80; 
+
+  // -- Initalize a 3D array of size width height maxRadius to store the hough space -- //
   // 3D array to store hough values
   std::cout << "Creating array" << std::endl;
   int ***houghSpace;
@@ -180,59 +173,57 @@ std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 14) {
   }
   std::cout << "Created array" << std::endl;
 
-  std::cout << "Starting Hough" << std::endl;
+  // -- Generate the hough space -- //
   // For every pixel in the image 
   for (int x = 0; x < width; x++) {
     for (int y = 0; y < height; y++) {
       
       // If the pixel is not empty (i.e on an edge)
-      if (gradMag.at<float>(y, x) >= 80) {
+      if (gradMag.at<float>(y, x) >= edgeThreshold) {
         
         // For every radius we are checking
         for (int r = minRadius; r < maxRadius; r++) {
           for (int t = gradDir.at<float>(y,x) - thetaErrorRange; t < gradDir.at<float>(y,x) + thetaErrorRange; t++) {
 
-            int xVal = x - (int) (r * std::cos(t));
-            int yVal = y - (int) (r * std::sin(t));
-            if (xVal >= 0 && xVal < width && yVal >= 0 && yVal < height) {
-              houghSpace[xVal][yVal][r]++;
+            int xValNeg = x - (int) (r * std::cos(t));
+            int yValNeg= y - (int) (r * std::sin(t));
+            if (xValNeg >= 0 && xValNeg < width && yValNeg >= 0 && yValNeg < height) {
+              houghSpace[xValNeg][yValNeg][r]++;
             }
 
-            xVal = x + (int) (r * std::cos(t));
-            yVal = y + (int) (r * std::sin(t));
-            if (xVal >= 0 && xVal < width && yVal >= 0 && yVal < height) {
-              houghSpace[xVal][yVal][r]++;
+            int xValPos = x + (int) (r * std::cos(t));
+            int yValPos = y + (int) (r * std::sin(t));
+            if (xValPos >= 0 && xValPos < width && yValPos >= 0 && yValPos < height) {
+              houghSpace[xValPos][yValPos][r]++;
             }
           }
         }
       }
     }
   }
-  std::cout << "Got hough space" << std::endl;
 
-  std::cout << "Scaling" << std::endl;
-  //scaling(houghSpace, width, height, maxRadius);
-  std::cout << "Scaled" << std::endl;
+  // -- Covert the 3D houghSpace into a 2D image so we can have a look -- //
+  if (draw) {
+    cv::Mat houghSpaceImage = cv::Mat::zeros(width, height, CV_32SC1);
+    for (int x = 0; x < width; x++){
+      for (int y = 0; y < height; y++){
+        for (int r = minRadius; r < maxRadius; r++){
+        	houghSpaceImage.at<int>(y,x) += houghSpace[x][y][r];
+        }
+      }
+    }
+    cv::imwrite("cirlce-hough-space.jpg", houghSpaceImage);
+  }
 
-  // Covert the houghSpace into an image so we can have a look
-  //cv::Mat houghSpaceImage = cv::Mat::zeros(width, height, CV_32SC1);
-  //for (int x = 0; x < width; x++){
-  //  for (int y = 0; y < height; y++){
-  //    for (int r = minRadius; r < maxRadius; r++){
-  //    	houghSpaceImage.at<int>(y,x) += houghSpace[x][y][r];
-  //    }
-  //  }
-  //}
-  //std::cout << "Got a iamge" << std::endl;
-  //cv::imwrite("cirlce-hough-space.jpg", houghSpaceImage);
-
+  // -- Extract cicles -- // 
   std::vector<cv::Vec3i> circles;
-  // For every pixel in the hough space
+ 
+  // Loop until there are no more values in the hough space greater than the threshold
   while (true) {
 
+    // Find the largest value in the hough space
     int currentMax = 0;
     cv::Vec3i circleAtMax;
-
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
         for (int r = minRadius; r < maxRadius; r++) {
@@ -258,15 +249,153 @@ std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 14) {
         }
       }
     }
+
     else {
+      // If the max value is less than the threashold stop the loop 
       break;
     }
 
   }
-  
-  std::cout << "Drew circles" << std::endl;
 
   return circles;
+}
+
+
+std::vector<cv::Vec2f> houghLines(cv::Mat &input) {
+  
+  cv::Mat gradMag = gradientMagnitude(input);
+  cv::Mat gradDir = gradientDirection(input);
+  
+  cv::imwrite("lines-grad-mag.png", gradMag);
+  cv::imwrite("lines-input.png", input);
+  
+  double width = input.size().width, height = input.size().height;
+  double imageHypot = std::hypot(width, height);
+
+  int numberOfRadii = 2*(width + height);
+  int numberOfAngles = 360;
+
+  int gradientThreshold = 180;
+  int deltaThetaRange = 180;
+  int houghThreshold = 40;
+
+  cv::Mat houghSpace = cv::Mat::zeros(numberOfRadii, numberOfAngles, CV_32FC1);
+  std::cout << "Hough space height: " << houghSpace.size().height << std::endl;
+  std::cout << "Hough space width: " << houghSpace.size().width << std::endl;
+
+  // For every pixel in the image 
+  for (int y = 0; y < gradMag.rows; y++) {
+    for (int x = 0; x < gradMag.cols; x++) {
+      
+      // If the pixel is above gradient mag threshold (i.e on an edge)
+      if (gradMag.at<float>(y, x) > gradientThreshold) {
+        
+        double gradientDirection = gradDir.at<float>(y, x);
+        double gradientTheta = gradientDirection;
+        // If deltaTheta is negative do a loop to make it positive
+        // covert deltaTheta into radians
+        gradientTheta *= ((float)180 / CV_PI);
+        if (gradientTheta < 0) {
+          gradientTheta += 360;
+        }
+
+        std::cout << "Gradient theta is: " << (int)gradientTheta << std::endl;
+
+        for (int theta = (int)gradientTheta - deltaThetaRange; theta <= (int)gradientTheta + deltaThetaRange; theta++) {
+          int rho = x * std::cos(theta * (CV_PI / (double)180)) + y * std::sin(theta * (CV_PI / (double)180)) + width + height;
+          //std::cout << rho << ", " << theta << std::endl;
+          houghSpace.at<float>(rho, theta)++;
+        }
+      }
+    }
+  }
+
+  std::cout << "Got hough space" << std::endl;
+  cv::imwrite("lines-hough-space.png", houghSpace);
+  std::cout << "Drew hough space" << std::endl;
+
+  std::vector<cv::Vec2f> houghLines;
+  
+  // Loop until there are no more values in the hough space greater than the threshold
+  while (true) {
+
+    // Find the largest value in the hough space
+    int currentMax = 0;
+    int maxTheta = 0;
+    int maxRho = 0;
+
+    for (int rho = 0; rho < numberOfRadii; rho++) {
+      for (int theta = 0; theta < numberOfAngles; theta++) {
+        if (houghSpace.at<float>(rho, theta) > currentMax) {
+          currentMax = houghSpace.at<float>(rho,theta);
+          maxRho = rho;
+          maxTheta = theta;
+        }
+      }
+    }
+
+    // Black out pixles around the peak to avoid clustering
+    if (currentMax > houghThreshold) {
+      cv::Vec2f lineAtMax = cv::Vec2f(maxTheta * (CV_PI/180), maxRho - width - height);
+      houghLines.push_back(lineAtMax);
+      int blackOutRadius = 30;
+      for ( float theta = maxTheta - blackOutRadius; theta <= maxTheta + blackOutRadius; theta++) {
+        for ( float rho = maxRho - blackOutRadius; rho <= maxRho + blackOutRadius; rho++) {
+          if (theta >= 0 && rho>=0 && rho < numberOfRadii && theta < numberOfAngles) {
+            houghSpace.at<float>(rho, theta) = 0.0f;
+          }
+        }
+      }
+      std::cout << currentMax << std::endl;
+    }
+
+    else {
+      // If the max value is less than the threashold stop the loop 
+      break;
+    }
+
+  }
+
+  // Search through the accumulator and find the maximums
+  for (int rho = 1; rho < numberOfRadii-1; rho++) {
+    for (int theta = 1; theta < numberOfAngles-1; theta++) {
+      int valueAtPoint = houghSpace.at<float>(rho,theta);
+      //if (    houghSpace.at<float>(rho,theta) > threshold 
+      //    &&  houghSpace.at<float>(rho,theta) > houghSpace.at<float>(rho,theta-1)
+      //    &&  houghSpace.at<float>(rho,theta) >= houghSpace.at<float>(rho,theta+1)
+      //    &&  houghSpace.at<float>(rho,theta) > houghSpace.at<float>(rho-1,theta)
+      //    &&  houghSpace.at<float>(rho,theta) >= houghSpace.at<float>(rho+1,theta)
+      //) {
+      if (valueAtPoint > houghThreshold) {
+        cv::Vec2f line = cv::Vec2f(theta * (CV_PI/180), rho - width - height);
+        houghLines.push_back(line);
+      }
+      //}
+    }
+  }
+  std::cout << "Got lines" << std::endl;
+  std::cout << houghLines.size() << std::endl;
+
+  cv::Mat output;
+  input.copyTo(output);
+  for( size_t i = 0; i < houghLines.size(); i++ )
+  {
+      float rho = houghLines[i][1];
+      std::cout << "Drawing line with rho: " << rho << std::endl;
+      float theta = houghLines[i][0];
+      std::cout << "Drawing line with theta: " << theta << std::endl;
+      cv::Point pt1, pt2;
+      double a = cos(theta), b = sin(theta);
+      double x0 = a*rho, y0 = b*rho;
+      pt1.x = cvRound(x0 + 1000*(-b));
+      pt1.y = cvRound(y0 + 1000*(a));
+      pt2.x = cvRound(x0 - 1000*(-b));
+      pt2.y = cvRound(y0 - 1000*(a));
+      line( output, pt1, pt2, cv::Scalar(0,255,255), 2, 8);
+  }
+  cv::imwrite("myhough-output.png", output);
+
+  return houghLines;
 }
 
 std::vector<cv::Rect> get_true_face(std::string path) {
@@ -434,10 +563,19 @@ main (int argc, char **argv)
     cv::equalizeHist( image_gray, image_gray);
     //cv::medianBlur(image_gray, image_gray, 5);
 
-    //cv::Mat gradD = gradientDirection(image_gray);
-    //cv::Mat gradM = gradientMagnitude(image_gray);
-    //cv::imwrite("graddirection.png", gradD * 10);
-    //cv::imwrite("gradmag.png", gradM);
+    cv::Mat gradD = gradientDirection(image_gray);
+    cv::Mat gradM = gradientMagnitude(image_gray);
+    cv::imwrite("graddirection.png", gradD * 10);
+    cv::imwrite("gradmag.png", gradM);
+
+    std::vector<cv::Rect> true_faces;
+    if (argc > 2) {
+      true_faces = get_true_face(argv[2]);
+    }
+    
+    // hough lines
+    cv::imwrite("lines_input_before_input.png", image_gray);
+    houghLines(image_gray);
 
     //// -- Hough -- //
     std::vector<cv::Vec3i> circles = houghCircles(image_gray, 35);
@@ -453,7 +591,8 @@ main (int argc, char **argv)
     std::vector<cv::Rect> boards = voilaJonesDartDetection(image_gray);
     cv::Mat vjOutput;
     image.copyTo(vjOutput);
-    draw(boards, vjOutput, cv::Scalar(0, 0, 255));
+    draw(boards, vjOutput, cv::Scalar(0, 255, 0));
+    draw(true_faces, vjOutput, cv::Scalar(0, 0, 255));
     std::cout << "Boards length:" << boards.size() << std::endl;
     cv::imwrite("vj-output.jpg", vjOutput);
 
@@ -464,10 +603,6 @@ main (int argc, char **argv)
     cv::imwrite("final-output.jpg", finalOutput);
 
     // -- Compare with true values -- //
-    std::vector<cv::Rect> true_faces;
-    if (argc > 2) {
-      true_faces = get_true_face(argv[2]);
-    }
     std::cout << "Number of true faces: " <<  true_faces.size() << std::endl;
     std::cout << "NUmber of final detections: " <<  finalBoards.size() << std::endl;
     std::cout << "TPR: " << true_positive_rate(finalBoards, true_faces) << std::endl;

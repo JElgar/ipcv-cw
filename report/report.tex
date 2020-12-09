@@ -17,24 +17,20 @@
 \usepackage[english]{babel}
 
 \usepackage{geometry}
-\geometry{margin=0.5in}
+\geometry{margin=1.2cm}
 
 % ---
 
 
 \graphicspath{ {assets/} }
+
+\setlength{\columnsep}{0cm}
 \begin{document}
 
 
 \section{Face detection}
 
-\begin{multicols}{2}
-
-TOGO
-Limitation of TPR. Difficult to define "true" values. The bouding region of a
-face is discrete and we may choose not to detect side on faces. Example below
-shows 2 possible "true" values for a detection. One give a IOU of under 0.7 but
-the other gives over 0.9.
+\begin{multicols}{2}[columnsep=2cm]
 
 % -- Part 1 - Image section
 \begin{multicols}{2}
@@ -47,7 +43,7 @@ the other gives over 0.9.
 \captionof{figure}{Viola-Jones face detection (green) with ground truth (red)}
 \label{fig:vjfaceimages}
 
-
+\begin{center}
 \begin{tabular}{ |p{2cm}||p{2cm}|p{2cm}| }
  \hline
  \multicolumn{3}{|c|}{Frontal face detection results} \\
@@ -63,6 +59,7 @@ the other gives over 0.9.
 \end{tabular}
 \captionof{table}{Viola-Jones face detection results}
 \label{tab:vjfacesresults}
+\end{center}
 
 \bigskip
 
@@ -111,6 +108,8 @@ positives.
 
 
 \section{Dart board detection}
+
+Having tested the Viola-Jones detector on faces a new cascade was trained. An image of a dart board was used to generate a set of postiive images along side a set of negative images. The detector was then trained on these images and it results are shown below.
 
 \begin{multicols}{2}
 
@@ -181,17 +180,22 @@ positives.
     \end{tikzpicture}
 
   }
-\end{multicols}{2}
+\end{multicols}
+\captionof{figure}{Viola-Jones training results}
+\label{fig:vjdarttraininggraph}
 
-Figure \ref{tprvsfprtraining} shows the change in FPR and TPR throughout the
-training process. At the beginning of the training all images are accepted
-throughout the stages more layers are added to the cascade. Each layer will
-remove of the regions classified as a dart board. This results in a drop in FPR
-as the training takes place. Throughout the training process the TPR remains
-and 1. However if more layers were added (and therefore the classifier removed
-more classified regions) then the TPR could also be reduced. This could still
-result in the classifiers F1 score increasing as the FPR would also be
-decreasing.
+Figure \ref{fig:vjdarttraininggraph} shows the change in FPR and TPR throughout the
+training steps. At the beginning of the training process all regions of the
+image are accepted. As the training goes on more classifiers are added to the
+cascade which have the oportunity to reject sections. This results in the sharp
+reduction in the false positivity rates, FPR, seen in
+\ref{fig:vjdarttraininggraph} as the number of negative regions which are
+rejected increases. The following stage then shows another reduction in FPR for
+the same reason however the reduction is far smaller as this classifier now
+applies to a far smaller set of images (those which are rejected by the first
+classifier are not passed on to any other classifiers) and it is performing a
+more "difficult task" \cite{vj} as the previous classifiers will have filtered
+out many of the neagative values.
 
 \begin{multicols}{3}
     \includegraphics[width=\linewidth]{dart1-dart.jpg}\par

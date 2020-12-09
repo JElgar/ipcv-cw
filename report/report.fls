@@ -495,7 +495,7 @@ INPUT ./assets//dart15-face.jpg
 INPUT assets//dart15-face.jpg
 INPUT ./assets//dart15-face.jpg
 INPUT ./assets//dart15-face.jpg
-INPUT /usr/local/texlive/2020/texmf-dist/fonts/tfm/public/cm/cmbx10.tfm
+INPUT /usr/local/texlive/2020/texmf-var/fonts/map/pdftex/updmap/pdftex.map
 INPUT ./assets//dart1-dart.jpg
 INPUT ./assets//dart1-dart.jpg
 INPUT assets//dart1-dart.jpg
@@ -511,7 +511,7 @@ INPUT ./assets//dart4-dart.jpg
 INPUT assets//dart4-dart.jpg
 INPUT ./assets//dart4-dart.jpg
 INPUT ./assets//dart4-dart.jpg
-INPUT /usr/local/texlive/2020/texmf-var/fonts/map/pdftex/updmap/pdftex.map
+INPUT /usr/local/texlive/2020/texmf-dist/fonts/tfm/public/cm/cmbx10.tfm
 INPUT /usr/local/texlive/2020/texmf-dist/fonts/tfm/jknappen/ec/tcrm1000.tfm
 INPUT ./assets//houghvj/8/gradmag.png
 INPUT ./assets//houghvj/8/gradmag.png
