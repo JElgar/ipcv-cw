@@ -301,8 +301,17 @@ void draw(std::vector<cv::Rect> rects, cv::Mat frame, cv::Scalar colour) {
   }
 }
 
+cv::Rect circleToRect(cv::Vec3i circle) {
+  return cv::Rect(cv::Point(circle[0] - circle[2], circle[1] - circle[2]), cv::Point(circle[0] + circle[2], circle[1] + circle[2]));
+}
+
 float intersection_over_union(cv::Rect detected_rect, cv::Rect true_rect) {
   return (detected_rect & true_rect).area() / (float)(detected_rect | true_rect).area();
+}
+
+float intersection_over_union(cv::Vec3i circle, cv::Rect rect) {
+  cv::Rect circle_rect = circleToRect(circle);
+  return std::max(intersection_over_union(circle_rect, rect), intersection_over_union(rect, circle_rect));
 }
 
 
@@ -359,6 +368,31 @@ std::vector<cv::Rect> voilaJonesDartDetection(cv::Mat &input) {
   return faces;
 }
 
+std::vector<cv::Rect> detectDartboards(cv::Mat image_gray, float threshold = 0.5) {
+
+  // Do vj and hough and store results
+  std::vector<cv::Vec3i> hough_boards = houghCircles(image_gray, 35);
+  std::vector<cv::Rect> vj_boards = voilaJonesDartDetection(image_gray);
+
+  // Find IOU of hough_boards and vj_boards and  
+  std::vector<cv::Rect> combined_boards; 
+  for (cv::Rect vj_board : vj_boards) {
+    float max_iou = 0;
+    for (cv::Vec3i h_board : hough_boards) {
+      float iou = intersection_over_union(h_board, vj_board);
+      //cout << "IOU: "<< iou << endl;
+      if (iou > max_iou) {
+        max_iou = iou;
+      }
+    }
+    std::cout << max_iou << std::endl;
+    if (max_iou > threshold) {
+      combined_boards.push_back(vj_board);
+    } 
+  }
+  return combined_boards;
+}
+
 
 int
 main (int argc, char **argv)
@@ -377,17 +411,20 @@ main (int argc, char **argv)
     cv::imwrite("graddirection.png", gradD);
     cv::imwrite("gradmag.png", gradM);
 
-    // -- Hough Jones -- //
+    // -- Hough -- //
     std::vector<cv::Vec3i> circles = houghCircles(image_gray, 35);
     cv::Mat circlesOutput;
     image.copyTo(circlesOutput);
     for (cv::Vec3i circle : circles) {
+      std::cout << circle[2] << std::endl;
+      cv::Rect circle_rect = circleToRect(circle);
       cv::Point center = cv::Point(circle[0], circle[1]);
       // circle center
       cv::circle( circlesOutput, center, 1, cv::Scalar(0,100,100), 3, 8);
       // circle outline
       int radius = circle[2];
       cv::circle( circlesOutput, center, radius, cv::Scalar(255,0,255), 3, 8);
+      cv::rectangle(circlesOutput, circle_rect , cv::Scalar(255, 0 , 255), 2);
     }
     std::cout << "Circles length:" << circles.size() << std::endl;
     cv::imwrite("cirlce-hough-output.jpg", circlesOutput);
@@ -399,6 +436,12 @@ main (int argc, char **argv)
     draw(boards, vjOutput, cv::Scalar(0, 0, 255));
     std::cout << "Boards length:" << boards.size() << std::endl;
     cv::imwrite("vj-output.jpg", vjOutput);
+
+    std::vector<cv::Rect> finalBoards = detectDartboards(image_gray);
+    cv::Mat finalOutput;
+    image.copyTo(finalOutput);
+    draw(finalBoards, finalOutput, cv::Scalar(0, 255, 0));
+    cv::imwrite("final-output.jpg", finalOutput);
 
     // free memory
     image.release();
