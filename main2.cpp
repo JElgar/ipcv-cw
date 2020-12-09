@@ -118,30 +118,35 @@ cv::Mat gradientDirection (cv::Mat &input) {
     return grad;
 }
 
-void scaling( int ***hough, int width, int height, int maxRadius){
-	int max = 0;
-	// find the max
-	for (int x=0; x< width; x++){
-		for(int y=0; y< height; y++){
-			for (int r=0; r< maxRadius; r++){
-				if (hough[x][y][r] > max){
-					max = hough[x][y][r];
-				}	
-			}
-		}
-	}
-	// scale the thing
-	for (int x=0; x< width; x++){
-		for(int y=0; y< height; y++){
-			for (int r=0; r< maxRadius; r++){
-				hough[x][y][r] = ( hough[x][y][r] * 255 ) / max ;	
-			}
-		}
-	}
+
+int max(int ***houghSpace, int width, int height, int maxRadius) {
+  int max = 0;
+  for (int x=0; x< width; x++){
+    for(int y=0; y< height; y++){
+  	for (int r=0; r< maxRadius; r++){
+  	  if (houghSpace[x][y][r] > max){
+  		max = houghSpace[x][y][r];
+  	  }	
+  	}
+    }
+  }
+  return max;
+}
+
+void scaling( int ***houghSpace, int width, int height, int maxRadius){
+
+  int max_hough_value = max(houghSpace, width, height, maxRadius);
+  for (int x=0; x< width; x++){
+    for(int y=0; y< height; y++){
+      for (int r=0; r< maxRadius; r++){
+        houghSpace[x][y][r] = (houghSpace[x][y][r] / max_hough_value) * 255;	
+      }
+    }
+  }
 }
 
 
-std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 20) {
+std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 14) {
   
   cv::Mat input_edges, input_gray, magnitude;
   input_gray = input;
@@ -151,7 +156,7 @@ std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 20) {
   int height = input.rows, width = input.cols;
 
   int maxRadius = 120;
-  int minRadius = 30;
+  int minRadius = 35;
   int rangeRadius = maxRadius - minRadius;
 
   int thetaErrorRange = 13;
@@ -291,6 +296,11 @@ std::vector<cv::Rect> get_true_face(std::string path) {
   return faces;
 }
 
+cv::Rect circleToRect(cv::Vec3i circle) {
+  return cv::Rect(cv::Point(circle[0] - circle[2], circle[1] - circle[2]), cv::Point(circle[0] + circle[2], circle[1] + circle[2]));
+}
+
+
 void draw(cv::Rect rect, cv::Mat frame, cv::Scalar colour) {
     rectangle(frame, rect, colour, 2);
 }
@@ -301,8 +311,18 @@ void draw(std::vector<cv::Rect> rects, cv::Mat frame, cv::Scalar colour) {
   }
 }
 
-cv::Rect circleToRect(cv::Vec3i circle) {
-  return cv::Rect(cv::Point(circle[0] - circle[2], circle[1] - circle[2]), cv::Point(circle[0] + circle[2], circle[1] + circle[2]));
+void draw(std::vector<cv::Vec3i> circles, cv::Mat frame, cv::Scalar colour = cv::Scalar(255, 0, 255)) {
+  for (cv::Vec3i circle : circles) {
+    std::cout << circle[2] << std::endl;
+    cv::Rect circle_rect = circleToRect(circle);
+    cv::Point center = cv::Point(circle[0], circle[1]);
+    // circle center
+    cv::circle( frame , center, 1, cv::Scalar(0,100,100), 3, 8);
+    // circle outline
+    int radius = circle[2];
+    cv::circle( frame , center, radius, colour, 3, 8);
+    cv::rectangle(frame, circle_rect , colour, 2);
+  }
 }
 
 float intersection_over_union(cv::Rect detected_rect, cv::Rect true_rect) {
@@ -368,7 +388,7 @@ std::vector<cv::Rect> voilaJonesDartDetection(cv::Mat &input) {
   return faces;
 }
 
-std::vector<cv::Rect> detectDartboards(cv::Mat image_gray, float threshold = 0.5) {
+std::vector<cv::Rect> detectDartboards(cv::Mat image_gray, float threshold = 0.4) {
 
   // Do vj and hough and store results
   std::vector<cv::Vec3i> hough_boards = houghCircles(image_gray, 35);
@@ -378,16 +398,18 @@ std::vector<cv::Rect> detectDartboards(cv::Mat image_gray, float threshold = 0.5
   std::vector<cv::Rect> combined_boards; 
   for (cv::Rect vj_board : vj_boards) {
     float max_iou = 0;
+    cv::Vec3i max_hough_board;
     for (cv::Vec3i h_board : hough_boards) {
       float iou = intersection_over_union(h_board, vj_board);
       //cout << "IOU: "<< iou << endl;
       if (iou > max_iou) {
         max_iou = iou;
+        max_hough_board = h_board; 
       }
     }
     std::cout << max_iou << std::endl;
     if (max_iou > threshold) {
-      combined_boards.push_back(vj_board);
+      combined_boards.push_back(circleToRect(max_hough_board));
     } 
   }
   return combined_boards;
@@ -407,25 +429,14 @@ main (int argc, char **argv)
 
     cv::Mat gradD = gradientDirection(image_gray);
     cv::Mat gradM = gradientMagnitude(image_gray);
-
-    cv::imwrite("graddirection.png", gradD);
+    cv::imwrite("graddirection.png", gradD * 10);
     cv::imwrite("gradmag.png", gradM);
 
     // -- Hough -- //
     std::vector<cv::Vec3i> circles = houghCircles(image_gray, 35);
     cv::Mat circlesOutput;
     image.copyTo(circlesOutput);
-    for (cv::Vec3i circle : circles) {
-      std::cout << circle[2] << std::endl;
-      cv::Rect circle_rect = circleToRect(circle);
-      cv::Point center = cv::Point(circle[0], circle[1]);
-      // circle center
-      cv::circle( circlesOutput, center, 1, cv::Scalar(0,100,100), 3, 8);
-      // circle outline
-      int radius = circle[2];
-      cv::circle( circlesOutput, center, radius, cv::Scalar(255,0,255), 3, 8);
-      cv::rectangle(circlesOutput, circle_rect , cv::Scalar(255, 0 , 255), 2);
-    }
+    draw(circles, circlesOutput);
     std::cout << "Circles length:" << circles.size() << std::endl;
     cv::imwrite("cirlce-hough-output.jpg", circlesOutput);
    

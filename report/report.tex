@@ -8,6 +8,15 @@
 \usepackage{subfig}
 \usepackage{pgfplots}
 
+\usepackage{multicol}
+\usepackage{float}
+
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows}
+
+\usepackage{geometry}
+\geometry{margin=0.5in}
+
 % ---
 
 
@@ -17,6 +26,7 @@
 
 \section{Face detection}
 
+\begin{multicols}{2}
 
 TOGO
 Limitation of TPR. Difficult to define "true" values. The bouding region of a
@@ -25,20 +35,18 @@ shows 2 possible "true" values for a detection. One give a IOU of under 0.7 but
 the other gives over 0.9.
 
 % -- Part 1 - Image section
-\begin{figure}
-\begin{tabular}{ccc}
-\subfloat[dart4]{\includegraphics[width = 1.4in]{dart4-face}} &
-\subfloat[dart5]{\includegraphics[width = 1.4in]{dart5-face}} &
-\subfloat[dart13]{\includegraphics[width = 1.4in]{dart13-face}} \\
-\subfloat[dart14]{\includegraphics[width = 1.4in]{dart14-face}} &
-\subfloat[dart15]{\includegraphics[width = 1.4in]{dart15-face}} &
-\end{tabular}
-\caption{Frontal face detection with ground truth}
-\end{figure}
+\begin{multicols}{2}
+  \centerline{\includegraphics[width=\linewidth]{dart4-face.jpg}\par}
+  \centerline{\includegraphics[width=\linewidth]{dart5-face.jpg}\par}
+  \centerline{\includegraphics[width=\linewidth]{dart13-face.jpg}\par}
+  \centerline{\includegraphics[width=\linewidth]{dart14-face.jpg}\par}
+  \centerline{\includegraphics[width=\linewidth]{dart15-face.jpg}\par}
+\end{multicols}
+\label{fig:vjface}
+\captionof{figure}{Viola-Jones face detection (green) with ground truth (red)}
 
-\bigskip
 
-\begin{tabular}{ |p{3cm}||p{3cm}|p{3cm}| }
+\begin{tabular}{ |p{2cm}||p{2cm}|p{2cm}| }
  \hline
  \multicolumn{3}{|c|}{Frontal face detection results} \\
  \hline
@@ -109,19 +117,14 @@ more classified regions) then the TPR could also be reduced. This could still
 result in the classifiers F1 score increasing as the FPR would also be
 decreasing.
 
-\begin{figure}
-\label{dartdetectionimages}
-\begin{tabular}{ccc}
-\subfloat[dart1]{\includegraphics[width = 1.4in]{dart1-dart}} &
-\subfloat[dart6]{\includegraphics[width = 1.4in]{dart6-dart}} &  
-\subfloat[dart4]{\includegraphics[width = 1.4in]{dart4-dart}} \\
-\end{tabular}
-\caption{Dart board detection with ground truth}
-\end{figure}
+\begin{multicols}{3}
+    \includegraphics[width=\linewidth]{dart1-dart.jpg}\par
+    \includegraphics[width=\linewidth]{dart6-dart.jpg}\par
+    \includegraphics[width=\linewidth]{dart4-dart.jpg}\par
+\end{multicols}
 
 
 \begin{tabular}{ |p{2cm}||p{2cm}|p{2cm}| }
-\label{dartresults}
  \hline
  \multicolumn{3}{|c|}{Frontal face detection results} \\
  \hline
@@ -146,8 +149,10 @@ decreasing.
  Average& 0.333333  & 0.133232    \\ 
  \hline
 \end{tabular}
+\label{table:vjdarts}
 
-The average values in Table \ref{dartresults}, show the unreliable results of
+
+The average values in Table \ref{vjdarts}, show the unreliable results of
 the cascade for detecting dart boards.  It not only has a very low TPR and also
 a very low F1-score suggesting there are many missed dart boards as well as
 regions falsely classified. The images in Figure \ref{dartdetectionimages} show
@@ -160,4 +165,75 @@ variations (via movements/rotations) on that image. This means when classifying
 different types of dartboards of those with objects in the way (such as
 \ref{dartresults} c) the classifier performs far worse.
 
+\section{Integrating Viola-Jones with Shape detection}
+
+From the above section it is clear that the Viola Jones detector is not well
+suited to detecting dart boards and especially not to detecting the circular
+shape of the dart board. In order to overcome this limitation the results from
+the Viola-Jones detector can be combined with a circle hough transform. This
+circle hough transform can then be used to shrink the results set and increase
+the F1 score of the detector. The combination step is as follows:
+
+\begin{itemize}
+  \item Run Viola-Jones and hough circles.
+  \item For every Viola-Jones results find the maximum IOU with the circles
+    from hough. 
+  \item If the IOU is greater than a specified threshold (0.4 in this case)
+    add results from the hough to the set of final results. 
+\end{itemize} 
+
+The use of IOU with hough resulted in a large reduction in the set of results.
+For the required IOU a relatively low threshold was chosen (0.4) as often the
+Viola-Jones detector would find a section of the dart board (matching the
+expected pattern) but no the circle. For this reason the final result used the
+bounding box from the hough circle rather than the Viola-Jones detector as this
+was more likely to encompass the full dartboard. This removed many of the
+original Viola-Jones false positives and therefore increased the F1-score
+dramatically.  However the limitation of this approach are clear in
+\ref{vjhough} which shows the circle detector failing to detect circles with
+large angles to the camera or with objects blocking sections of the circle.
+This can result in a reduction in the TPR rate of the overall detector in
+exchange for the reduction in the number of false positives.
+
+\begin{figure}
+\label{houghdetails}
+\begin{tabular}{ccc}
+\subfloat[gradient magnitude]{\includegraphics[width = 1.1in]{houghvj/8/gradmag.png}} &
+\subfloat[gradient direction]{\includegraphics[width = 1.1in]{houghvj/8/graddirection.png}} &  
+\subfloat[2D representation of hough space]{\includegraphics[width = 1.1in]{houghvj/8/cirlce-hough-space.jpg}} &
+\subfloat[Output]{\includegraphics[width = 1.1in]{houghvj/8/cirlce-hough-space.jpg}} &
+\end{tabular}
+\caption{Hough}
+\end{figure}
+
+
+\begin{tikzpicture}[node distance=1cm]
+\tikzstyle{line}=[draw]
+\tikzstyle{process} = [rectangle, minimum width=3cm, minimum height=1cm, text centered, text width=3cm, draw=black, fill=orange!30]
+\tikzstyle{decision} = [diamond, minimum width=3cm, text centered, text width=3cm, draw=black, fill=green!30]
+\tikzstyle{sdecision} = [diamond, minimum width=3cm, draw=black, fill=green!30]
+\tikzstyle{arrow}=[draw, -latex]
+
+\node (start) [sdecision, yshift=-0.5cm] {Start};
+\node (gray) [process, below of=start, yshift=-0.5cm] {Gray image};
+\node (eqHist) [process, below of=gray, yshift=-0.5cm] {Equalize histogram};
+\node (grad) [process, below right of=eqHist, yshift=-0.8cm, xshift=1.5cm] {Image gradient};
+\node (hough) [process, below of=grad, yshift=-0.5cm] {Hough circle transform};
+\node (vj) [process, below left of=eqHist, yshift=-0.8cm, xshift=-1.cm] {Vila Jones detection};
+\node (threshold) [decision, below left of=hough, yshift=-2.5cm, xshift=-1.cm] {Compare intersection of hough and viloajones};
+
+\draw [arrow] (start) -- (gray);
+\draw [arrow] (gray) -- (eqHist);
+\draw [arrow] (eqHist) -| (grad);
+\draw [arrow] (eqHist) -| (vj);
+\draw [arrow] (grad) -- (hough);
+
+\draw [arrow] (hough) -- (threshold);
+\draw [arrow] (vj) -- (threshold);
+
+\end{tikzpicture}
+
+
+
+\end{multicols}{2}
 \end{document}
