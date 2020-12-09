@@ -14,6 +14,8 @@
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows}
 
+\usepackage[english]{babel}
+
 \usepackage{geometry}
 \geometry{margin=0.5in}
 
@@ -43,7 +45,7 @@ the other gives over 0.9.
   \centerline{\includegraphics[width=\linewidth]{dart15-face.jpg}\par}
 \end{multicols}
 \captionof{figure}{Viola-Jones face detection (green) with ground truth (red)}
-\label{fig:vjface}
+\label{fig:vjfaceimages}
 
 
 \begin{tabular}{ |p{2cm}||p{2cm}|p{2cm}| }
@@ -59,23 +61,54 @@ the other gives over 0.9.
  dart15 & 1   & 0         \\ 
  \hline
 \end{tabular}
+\captionof{table}{Viola-Jones face detection results}
+\label{tab:vjfacesresults}
 
 \bigskip
 
-The results show that the true positivity rate, TPR, for all images is 1.
-Despite this we often see far lower F1 scores. This reveals the limitation of
-the TPR as a detector can always achieve a high TPR by having a low tolerance
-to classify something as a face. This would result in a very low F1 score as
-many false positives would arise yet the true positivity rate would remain
-high.
+The results in Table \ref{tab:vjfacesresults} show the true positivity rate, TPR, and the F1 score of the Viola-Jones face detector on the input images shown in \ref{fig:vjfaceimages}. TPR is the fraction of true faces which have been detected and F1 score is given by
 
-The image dart-15 reveals another limitation of these metrics. It can often to
-difficult to classify the ground truth. This classifier was created to detect
-frontal faces and therefore in dart15 I have claimed no frontal face present.
-Despite this the classifier has detected on of the faces brining its F1 score
-down. Similarly there is no clear boundry for a face and therefore the exact
-area that should be detected can vary resulting in the need for a larger
-tolerance for the intersection over area, IOU.
+\[ 2 \times \frac{precision \times recall}{precision + recall} \]
+
+where precision is the number of true positives divided by the total number of detected objects and recall is the number of true positives divided by the true number of objects in the image.
+
+The true values used to calculate the above are determined manually for each
+input image. This can results in some ambiguity as a face does not have a
+strictly defined bounding region which can result in different "true" values. 
+
+The effect of this variation in true faces is mitigated by the use of intersection over union, IOU, to determine if a true value has successfully been detected. As provided by \cite{iou} the IOU is calculated by determining 
+
+\[ \frac{\mbox{Area of Overlap}}{\mbox{Area of Union}}\] 
+
+for a true value and a given region classified by the detector. In this paper
+for each true value we use the maximum IOU between that true value and all of
+the detected values. A threshold is then definied and if the IOU is greater
+than the required threadhold the true value has been detected. This threshold
+is what allows for slight variations in the true values.
+
+Similarly the Viola-Jones detector was designed as a
+frontal face detector meaning a side on face would not be considered a true
+value. The example in Figure \ref{fig:vjfaceimages} shows that the definition
+of a side on face can also be ambiguous and therefore for in this paper the
+definition requires both eyes to be fully visible. The consequence of TPR's
+ambiguity is evident in the previous figure as the detector did classify one of
+the side on faces and therefore its F1 would have been was reduced as result of
+this not being considered a true value.
+
+All the results in Table \ref{tab:vjfacesresults} have a TPR value of 1. This
+means every valid face in the input images were detected. The Viola-Jones
+method however can often have a very hight TPR. This is as a result of
+"cascade" \cite{vj}implementation. When a region of the image is evaulated it
+is repeatedly passed through classifiers in an overall cascade until a
+classifier rejects the region of it passes thorugh all the classifiers and is
+therefore on the the detected regions. Each classifier has "very high detection
+rates" \cite{vj}. This means if a classifier does not have many stages then the
+overall cascade will also have a very high TPR rate by not rejecting many
+regions. However this will come at the cost of many false positives. In order
+for a classifier to have a hight F1 score it will need a balance between high
+TPR (recall) but also need a high precision and thus a low number of false
+positives.
+
 
 \section{Dart board detection}
 
@@ -166,7 +199,7 @@ decreasing.
     \includegraphics[width=\linewidth]{dart4-dart.jpg}\par
 \end{multicols}
 \captionof{figure}{Viola-Jones dartboard detection with true values}
-\label{tab:vjdartsimages}
+\label{fig:vjdartsimages}
 
 
 \begin{tabular}{ |p{2cm}||p{2cm}|p{2cm}| }
@@ -175,12 +208,12 @@ decreasing.
  \hline
  Image name & TPR & F1-SCORE \\
  \hline
- dart1  & 1  & 0.666667   \\
+ dart1  & 1  & 0.667   \\
  dart2  & 1  & 0.25       \\
  dart3  & 1  & 0.4        \\
  dart4  & 0  & 0          \\
  dart5  & 0  & 0          \\
- dart6  & 1  & 0.181818   \\
+ dart6  & 1  & 0.182   \\
  dart7  & 0  & 0          \\
  dart8  & 0  & 0          \\
  dart9  & 0  & 0          \\
@@ -197,6 +230,7 @@ decreasing.
 \captionof{table}{Viola-Jones face detection (green) with ground truth (red)}
 \label{tab:vjdartstable}
 
+The Viola-Jones algorithm described as described in \cite{vj} uses very simple feature (2, 3 or 4 rectange features). This allows the Viola-Jones algorithm to be very efficient at detecting certain objects such as faces can be difficult to scale up to more complex objects such as dartboards. This can seen in the results above. Often the classifier finds a subsection of the true dartsboards as the complex repeating pattern of the dartboard means the simple detector can not scope the full board. Similarly the results in Table \ref{tab:vjdartstable} and Figure \ref{fig:vjdartsimages}, shows that the detector has many false positives. This suggests the simple features created by the cascade are also being detected throughout the image.
 
 The average values in Table \ref{tab:vjdartstable}, show the unreliable results of
 the cascade for detecting dart boards.  It not only has a very low TPR and also
@@ -224,22 +258,23 @@ the F1 score of the detector. The combination step is as follows:
   \item Run Viola-Jones and hough circles.
   \item For every Viola-Jones results find the maximum IOU with the circles
     from hough. 
-  \item If the IOU is greater than a specified threshold (0.4 in this case)
+  \item If the IOU is greater than a specified threshold (0.25 in this case)
     add results from the hough to the set of final results. 
 \end{itemize} 
 
 The use of IOU with hough resulted in a large reduction in the set of results.
 For the required IOU a relatively low threshold was chosen (0.4) as often the
-Viola-Jones detector would find a section of the dart board (matching the
-expected pattern) but no the circle. For this reason the final result used the
-bounding box from the hough circle rather than the Viola-Jones detector as this
-was more likely to encompass the full dartboard. This removed many of the
-original Viola-Jones false positives and therefore increased the F1-score
-dramatically.  However the limitation of this approach are clear in
-\ref{vjhough} which shows the circle detector failing to detect circles with
-large angles to the camera or with objects blocking sections of the circle.
-This can result in a reduction in the TPR rate of the overall detector in
-exchange for the reduction in the number of false positives.
+Viola-Jones detector would find a sub section of the dart board (matching the
+expected pattern) but not the circle.  For this reason the final result used
+the maximum of the bounding boxes from the two detectors rather than the
+Viola-Jones detector as this was more likely to encompass the full dartboard
+and not just a sub section or inner circle. This removed many of the original
+Viola-Jones false positives and therefore increased the F1-score dramatically.
+However the limitation of this approach are clear in \ref{vjhough} which shows
+the circle detector failing to detect circles with large angles to the camera
+or with objects blocking sections of the circle.  This can result in a
+reduction in the TPR rate of the overall detector in exchange for the reduction
+in the number of false positives.
 
 \begin{multicols}{4}
   \centerline{\includegraphics[width=\linewidth]{houghvj/8/gradmag.png}\par}
@@ -265,27 +300,27 @@ exchange for the reduction in the number of false positives.
  \hline
  Image name & TPR & F1 & \(\Delta\) TPR & \(\Delta\) F1 \\
  \hline
- dart1  & 1  & 1 \\
- dart2  & 1  & 0.5       \\
- dart3  & 1  & 0.5        \\
- dart4  & 0  & 0          \\
- dart5  & 1  & 1          \\
- dart6  & 0  & 0 \\
- dart7  & 1  & 0.5          \\
- dart8  & 0.5  & 0.666667          \\
- dart9  & 0  & 0          \\
- dart10 & 0  & 0          \\
- dart11 & 0.333333  & 0.5          \\
- dart12 & 0  & 0          \\
- dart13 & 1  & 0.4          \\
- dart14 & 1  & 0.5          \\
- dart15 & 1  & 1        \\
+ dart1  & 1  & 1 & 0 & + 0.333 \\
+ dart2  & 1  & 0.5 & 0 & +0.25       \\
+ dart3  & 1  & 0.5 & 0 & +0.1       \\
+ dart4  & 0  & 0 & 0 & 0         \\
+ dart5  & 1  & 1 & 0 & 0         \\
+ dart6  & 0  & 0 & -1 & -0.182 \\
+ dart7  & 1  & 0.5 & +1 & +0.5         \\
+ dart8  & 0.5  & 0.667 & +0.5 & +0.667   \\
+ dart9  & 0.5  & 0.4 & +0.5 & +0.4           \\
+ dart10 & 0  & 0 & 0 & 0          \\
+ dart11 & 0.333  & 0.5 & +0.333  & +0.5          \\
+ dart12 & 0  & 0 & 0 & 0         \\
+ dart13 & 1  & 0.4 & +1 & +0.4         \\
+ dart14 & 1  & 0.5 & +1 & +0.5         \\
+ dart15 & 1  & 1   & +1 & +1     \\
  \hline
- Average& 0.333333  & 0.133232    \\ 
+ Average& 0.333333  & 0.133232 & +0.289 & 0.298   \\ 
  \hline
 \end{tabular}
-\captionof{table}{Viola-Jones face detection (green) with ground truth (red)}
-\label{tab:vjdartstable}
+\captionof{table}{Viola-Jones plus hough circles detection with difference in F1 score and TPR between results in Table \ref{tab:vjdartstable}}
+\label{tab:vjhoughdartstable}
 
 
 \begin{tikzpicture}[node distance=1cm]
@@ -317,4 +352,8 @@ exchange for the reduction in the number of false positives.
 
 
 \end{multicols}{2}
+
+\bibliographystyle{unsrt}
+\bibliography{report}
+
 \end{document}

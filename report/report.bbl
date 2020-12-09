@@ -1,0 +1,13 @@
+\begin{thebibliography}{1}
+
+\bibitem{iou}
+Adrian Rosebrock.
+\newblock Intersection over union (iou) for object detection.
+\newblock 2016.
+
+\bibitem{vj}
+Paul Viola and Michael J.Jones.
+\newblock Robust real-time face detection.
+\newblock {\em International Journal of Computer Vision}, 57(2):137--154, 2004.
+
+\end{thebibliography}

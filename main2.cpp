@@ -215,16 +215,16 @@ std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 14) {
   std::cout << "Scaled" << std::endl;
 
   // Covert the houghSpace into an image so we can have a look
-  cv::Mat houghSpaceImage = cv::Mat::zeros(width, height, CV_32SC1);
-  for (int x = 0; x < width; x++){
-    for (int y = 0; y < height; y++){
-	  for (int r = minRadius; r < maxRadius; r++){
-	  	houghSpaceImage.at<int>(y,x) += houghSpace[x][y][r];
-	  }
-    }
-  }
-  std::cout << "Got a iamge" << std::endl;
-  cv::imwrite("cirlce-hough-space.jpg", houghSpaceImage);
+  //cv::Mat houghSpaceImage = cv::Mat::zeros(width, height, CV_32SC1);
+  //for (int x = 0; x < width; x++){
+  //  for (int y = 0; y < height; y++){
+  //    for (int r = minRadius; r < maxRadius; r++){
+  //    	houghSpaceImage.at<int>(y,x) += houghSpace[x][y][r];
+  //    }
+  //  }
+  //}
+  //std::cout << "Got a iamge" << std::endl;
+  //cv::imwrite("cirlce-hough-space.jpg", houghSpaceImage);
 
   std::vector<cv::Vec3i> circles;
   // For every pixel in the hough space
@@ -446,6 +446,8 @@ main (int argc, char **argv)
     draw(circles, circlesOutput);
     std::cout << "Circles length:" << circles.size() << std::endl;
     cv::imwrite("cirlce-hough-output.jpg", circlesOutput);
+
+    std::cout << "Hough done" <<  std::endl;
    
     //// -- Viola Jones -- //
     std::vector<cv::Rect> boards = voilaJonesDartDetection(image_gray);
