@@ -7,6 +7,7 @@
 #include <sstream>
 #include <fstream>
 #include <string>
+#include <vector>
 #include <iostream>
 #include <stdio.h>
 #include <math.h>
@@ -23,6 +24,36 @@ std::vector<std::string> split(std::string line, std::string delimiter) {
   tokens.push_back(line);
   return tokens;
 }
+
+std::pair<cv::Point, cv::Point> getTwoPointsOnLine(cv::Vec2f line) {
+  float rho = line[1];
+  float theta = line[0];
+  double a = cos(theta), b = sin(theta);
+  double x0 = a*rho, y0 = b*rho;
+  cv::Point point1 = cv::Point(cvRound(x0 + 1000*(-b)), cvRound(y0 + 1000*(a)));
+  cv::Point point2 = cv::Point(cvRound(x0 - 1000*(-b)), cvRound(y0 - 1000*(a)));
+  return std::pair<cv::Point, cv::Point>(point1, point2);
+}
+
+cv::Point lineIntersection(cv::Vec2f line1, cv::Vec2f line2) {
+  float theta1 = line1[0];
+  float rho1 = line1[1];
+  float theta2 = line2[0];
+  float rho2 = line2[1];
+  float determinent = std::cos(theta1) *  std::sin(theta2) - cv::sin(theta1) * std::cos(theta2);
+
+  // Lines parallel therefore no intersection 
+  if (determinent == 0) {
+    return cv::Point();
+  }
+
+  else {
+    int x = (cv::sin(theta2) * rho1 - cv::sin(theta1) * rho2) / determinent;
+    int y = (-cv::cos(theta2) * rho1 + cv::cos(theta1) * rho2) / determinent;
+    return cv::Point(x, y);
+  }
+}
+
 
 
 cv::Mat convolution(cv::Mat &input, cv::Mat &kernel) {
@@ -119,22 +150,6 @@ cv::Mat gradientDirection (cv::Mat &input) {
 }
 
 
-// Returns maximum value in hough space
-int max(int ***houghSpace, int width, int height, int maxRadius) {
-  int max = 0;
-  for (int x=0; x< width; x++){
-    for(int y=0; y< height; y++){
-  	for (int r=0; r< maxRadius; r++){
-  	  if (houghSpace[x][y][r] > max){
-  		max = houghSpace[x][y][r];
-  	  }	
-  	}
-    }
-  }
-  return max;
-}
-
-
 std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 14, bool draw = false) {
   
   cv::Mat input_edges, input_gray, magnitude;
@@ -200,7 +215,10 @@ std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 14, bool dr
         }
       }
     }
+    std::cout << x << std::endl;
   }
+  
+  std::cout << "Hough space generated" << std::endl;
 
   // -- Covert the 3D houghSpace into a 2D image so we can have a look -- //
   if (draw) {
@@ -277,7 +295,7 @@ std::vector<cv::Vec2f> houghLines(cv::Mat &input) {
 
   int gradientThreshold = 180;
   int thetaRange = 180;
-  int houghThreshold = 120;
+  int houghThreshold = 72;
 
   cv::Mat houghSpace = cv::Mat::zeros(numberOfRadii, numberOfAngles, CV_32FC1);
   std::cout << "Hough space height: " << houghSpace.size().height << std::endl;
@@ -345,23 +363,6 @@ std::vector<cv::Vec2f> houghLines(cv::Mat &input) {
 
   }
 
-  // Search through the accumulator and find the maximums
-  for (int rho = 1; rho < numberOfRadii-1; rho++) {
-    for (int theta = 1; theta < numberOfAngles-1; theta++) {
-      int valueAtPoint = houghSpace.at<float>(rho,theta);
-      //if (    houghSpace.at<float>(rho,theta) > threshold 
-      //    &&  houghSpace.at<float>(rho,theta) > houghSpace.at<float>(rho,theta-1)
-      //    &&  houghSpace.at<float>(rho,theta) >= houghSpace.at<float>(rho,theta+1)
-      //    &&  houghSpace.at<float>(rho,theta) > houghSpace.at<float>(rho-1,theta)
-      //    &&  houghSpace.at<float>(rho,theta) >= houghSpace.at<float>(rho+1,theta)
-      //) {
-      if (valueAtPoint > houghThreshold) {
-        cv::Vec2f line = cv::Vec2f(theta * (CV_PI/180), rho - width - height);
-        houghLines.push_back(line);
-      }
-      //}
-    }
-  }
   std::cout << "Got lines" << std::endl;
   std::cout << houghLines.size() << std::endl;
 
@@ -369,18 +370,8 @@ std::vector<cv::Vec2f> houghLines(cv::Mat &input) {
   input.copyTo(output);
   for( size_t i = 0; i < houghLines.size(); i++ )
   {
-      float rho = houghLines[i][1];
-      std::cout << "Drawing line with rho: " << rho << std::endl;
-      float theta = houghLines[i][0];
-      std::cout << "Drawing line with theta: " << theta << std::endl;
-      cv::Point pt1, pt2;
-      double a = cos(theta), b = sin(theta);
-      double x0 = a*rho, y0 = b*rho;
-      pt1.x = cvRound(x0 + 1000*(-b));
-      pt1.y = cvRound(y0 + 1000*(a));
-      pt2.x = cvRound(x0 - 1000*(-b));
-      pt2.y = cvRound(y0 - 1000*(a));
-      line( output, pt1, pt2, cv::Scalar(0,255,255), 2, 8);
+    std::pair<cv::Point, cv::Point> points = getTwoPointsOnLine(houghLines[i]);
+    line( output, points.first, points.second, cv::Scalar(0,255,255), 2, 8);
   }
   cv::imwrite("myhough-output.png", output);
 
@@ -418,7 +409,6 @@ cv::Rect circleToRect(cv::Vec3i circle) {
   return cv::Rect(cv::Point(circle[0] - circle[2], circle[1] - circle[2]), cv::Point(circle[0] + circle[2], circle[1] + circle[2]));
 }
 
-
 void draw(cv::Rect rect, cv::Mat frame, cv::Scalar colour) {
     rectangle(frame, rect, colour, 2);
 }
@@ -453,7 +443,7 @@ float intersection_over_union(cv::Vec3i circle, cv::Rect rect) {
 }
 
 
-int number_of_correctly_detected_faces(std::vector<cv::Rect> detected_rects, std::vector<cv::Rect> true_rects, float threshold = 0.55) {
+int number_of_correctly_detected_faces(std::vector<cv::Rect> detected_rects, std::vector<cv::Rect> true_rects, float threshold = 0.5) {
   int number_of_detected_faces = 0; 
   for (int i = 0; i < true_rects.size(); i++) {
     float max_iou = 0;
@@ -509,15 +499,17 @@ std::vector<cv::Rect> voilaJonesDartDetection(cv::Mat &input) {
 std::vector<cv::Rect> detectDartboards(cv::Mat image_gray, float threshold = 0.25) {
 
   // Do vj and hough and store results
-  std::vector<cv::Vec3i> hough_boards = houghCircles(image_gray, 35);
+  std::vector<cv::Vec2f> hough_lines = houghLines(image_gray);
+  std::vector<cv::Vec3i> hough_circles = houghCircles(image_gray, 35);
   std::vector<cv::Rect> vj_boards = voilaJonesDartDetection(image_gray);
+  std::vector<cv::Rect> combined_boards; 
 
   // Find IOU of hough_boards and vj_boards and  
-  std::vector<cv::Rect> combined_boards; 
-  for (cv::Rect vj_board : vj_boards) {
+  for (int i = 0; i < vj_boards.size(); i++) {
+    cv::Rect vj_board = vj_boards[i];
     float max_iou = 0;
     cv::Vec3i max_hough_board;
-    for (cv::Vec3i h_board : hough_boards) {
+    for (cv::Vec3i h_board : hough_circles) {
       float iou = intersection_over_union(h_board, vj_board);
       //cout << "IOU: "<< iou << endl;
       if (iou > max_iou) {
@@ -529,14 +521,69 @@ std::vector<cv::Rect> detectDartboards(cv::Mat image_gray, float threshold = 0.2
     if (max_iou > threshold) {
 
       // Push the thing with the max area
-      if(CV_PI * max_hough_board[2] * max_hough_board[2] > vj_board.area()) {
+      if(circleToRect(max_hough_board).area() > vj_board.area()) {
         combined_boards.push_back(circleToRect(max_hough_board));
       } else {
+        std::cout << "Took board with area " << vj_board.area() << " instead of circle " << circleToRect(max_hough_board) << std::endl;
         combined_boards.push_back(vj_board);
       }
+
+      // Remove from vector so we dont readadd when doing lines stuff
+      vj_boards.erase(vj_boards.begin() + i);
     } 
   }
+
+  // For the remaining boards
+  // If 3 lines pass through the same point (with threshold) and that point is in the bounding box
+  //  \|
+  // __\__
+  //   |\
+  //   | \
+
+  std::vector<cv::Point> lineIntersectionPoints;
+  for (cv::Vec2f line1 : hough_lines) {
+    for (cv::Vec2f line2 : hough_lines) {
+      if (line1 != line2) {
+        cv::Point point = lineIntersection(line1, line2);
+        std::cout << point.x << ", " << point.y << std::endl;
+        lineIntersectionPoints.push_back(point);
+      }
+    }
+  }
+    
+  int intersectionThreshold = 10;
+  int requiredIntersections = 3;
+
+  for(cv::Rect vj_board : vj_boards) {
+
+    int numberOfIntersectionsFound = 2;
   
+    std::vector<cv::Point> currentBoardsIntersectionPoints;
+    for (cv::Point point : lineIntersectionPoints) {
+      if ( vj_board.contains(point) ) {
+        currentBoardsIntersectionPoints.push_back(point);
+      }
+    }
+
+    for (cv::Point point1 : currentBoardsIntersectionPoints) {
+      if (numberOfIntersectionsFound >= requiredIntersections) {
+        break;
+      }
+      for (cv::Point point2 : currentBoardsIntersectionPoints) {
+        if (point1 != point2) {
+          // If the distance between this intersection point and the other intersection point is < the threshold
+          cv::Point distance = point1 - point2;
+          if (cv::sqrt(distance.x*distance.x + distance.y*distance.y) < intersectionThreshold) {
+            combined_boards.push_back(vj_board);
+            numberOfIntersectionsFound++;
+            std::cout << "Interseciton found" << std::endl;
+            break;
+          }
+        }
+      }
+    }
+  }
+
   return combined_boards;
 }
 
@@ -549,7 +596,10 @@ main (int argc, char **argv)
     image = cv::imread(argv[1], CV_LOAD_IMAGE_COLOR);
 
     cv::cvtColor( image, image_gray, CV_BGR2GRAY);
-    cv::equalizeHist( image_gray, image_gray);
+    
+    // hough lines
+    cv::imwrite("lines_input_before_input.png", image_gray);
+    //houghLines(image_gray);
     //cv::medianBlur(image_gray, image_gray, 5);
 
     cv::Mat gradD = gradientDirection(image_gray);
@@ -562,28 +612,25 @@ main (int argc, char **argv)
       true_faces = get_true_face(argv[2]);
     }
     
-    // hough lines
-    cv::imwrite("lines_input_before_input.png", image_gray);
-    houghLines(image_gray);
 
-    //// -- Hough -- //
-    std::vector<cv::Vec3i> circles = houghCircles(image_gray, 35);
-    cv::Mat circlesOutput;
-    image.copyTo(circlesOutput);
-    draw(circles, circlesOutput);
-    std::cout << "Circles length:" << circles.size() << std::endl;
-    cv::imwrite("cirlce-hough-output.jpg", circlesOutput);
+    // -- Hough -- //
+    //std::vector<cv::Vec3i> circles = houghCircles(image_gray, 35);
+    //cv::Mat circlesOutput;
+    //image.copyTo(circlesOutput);
+    //draw(circles, circlesOutput);
+    //std::cout << "Circles length:" << circles.size() << std::endl;
+    //cv::imwrite("cirlce-hough-output.jpg", circlesOutput);
 
-    std::cout << "Hough done" <<  std::endl;
+    //std::cout << "Hough done" <<  std::endl;
    
-    //// -- Viola Jones -- //
-    std::vector<cv::Rect> boards = voilaJonesDartDetection(image_gray);
-    cv::Mat vjOutput;
-    image.copyTo(vjOutput);
-    draw(boards, vjOutput, cv::Scalar(0, 255, 0));
-    draw(true_faces, vjOutput, cv::Scalar(0, 0, 255));
-    std::cout << "Boards length:" << boards.size() << std::endl;
-    cv::imwrite("vj-output.jpg", vjOutput);
+    // -- Viola Jones -- //
+    //std::vector<cv::Rect> boards = voilaJonesDartDetection(image_gray);
+    //cv::Mat vjOutput;
+    //image.copyTo(vjOutput);
+    //draw(boards, vjOutput, cv::Scalar(0, 255, 0));
+    //draw(true_faces, vjOutput, cv::Scalar(0, 0, 255));
+    //std::cout << "Boards length:" << boards.size() << std::endl;
+    //cv::imwrite("vj-output.jpg", vjOutput);
 
     std::vector<cv::Rect> finalBoards = detectDartboards(image_gray);
     cv::Mat finalOutput;

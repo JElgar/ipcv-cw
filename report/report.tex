@@ -24,15 +24,17 @@
 
 \graphicspath{ {assets/} }
 
-\setlength{\columnsep}{0cm}
+\setlength{\columnsep}{1.3cm}
 \begin{document}
 
 
 \section{Face detection}
 
-\begin{multicols}{2}[columnsep=2cm]
+\setlength{\columnsep}{0.8cm}
+\begin{multicols}{2}
 
 % -- Part 1 - Image section
+\setlength{\columnsep}{0.1cm}
 \begin{multicols}{2}
   \centerline{\includegraphics[width=\linewidth]{dart4-face.jpg}\par}
   \centerline{\includegraphics[width=\linewidth]{dart5-face.jpg}\par}
@@ -206,6 +208,7 @@ out many of the neagative values.
 \label{fig:vjdartsimages}
 
 
+\begin{center}
 \begin{tabular}{ |p{2cm}||p{2cm}|p{2cm}| }
  \hline
  \multicolumn{3}{|c|}{Frontal face detection results} \\
@@ -233,6 +236,7 @@ out many of the neagative values.
 \end{tabular}
 \captionof{table}{Viola-Jones face detection (green) with ground truth (red)}
 \label{tab:vjdartstable}
+\end{center}
 
 The Viola-Jones algorithm described as described in \cite{vj} uses very simple feature (2, 3 or 4 rectange features). This allows the Viola-Jones algorithm to be very efficient at detecting certain objects such as faces can be difficult to scale up to more complex objects such as dartboards. This can seen in the results above. Often the classifier finds a subsection of the true dartsboards as the complex repeating pattern of the dartboard means the simple detector can not scope the full board. Similarly the results in Table \ref{tab:vjdartstable} and Figure \ref{fig:vjdartsimages}, shows that the detector has many false positives. This suggests the simple features created by the cascade are also being detected throughout the image.
 
@@ -263,7 +267,7 @@ the F1 score of the detector. The combination step is as follows:
   \item For every Viola-Jones results find the maximum IOU with the circles
     from hough. 
   \item If the IOU is greater than a specified threshold (0.25 in this case)
-    add results from the hough to the set of final results. 
+    add the item with the largest area to the set of final results.
 \end{itemize} 
 
 The use of IOU with hough resulted in a large reduction in the set of results.
@@ -298,6 +302,7 @@ in the number of false positives.
 \captionof{figure}{Hough circle detection on dart8.jpg}
 \label{fig:hough2results}
 
+\begin{center}
 \begin{tabular}{ |p{1.3cm}||p{1.3cm}|p{1.3cm}|p{1.3cm}|p{1.3cm}| }
  \hline
  \multicolumn{5}{|c|}{Frontal face detection results} \\
@@ -314,44 +319,77 @@ in the number of false positives.
  dart8  & 0.5  & 0.667 & +0.5 & +0.667   \\
  dart9  & 0.5  & 0.4 & +0.5 & +0.4           \\
  dart10 & 0  & 0 & 0 & 0          \\
- dart11 & 0.333  & 0.5 & +0.333  & +0.5          \\
+ dart11 & 0.667  & 0.444 & +0.667  & +0.444          \\
  dart12 & 0  & 0 & 0 & 0         \\
  dart13 & 1  & 0.4 & +1 & +0.4         \\
  dart14 & 1  & 0.5 & +1 & +0.5         \\
  dart15 & 1  & 1   & +1 & +1     \\
  \hline
- Average& 0.333333  & 0.133232 & +0.289 & 0.298   \\ 
+ Average& 0.333333  & 0.133232 & +0.289 & +0.298   \\ 
  \hline
 \end{tabular}
 \captionof{table}{Viola-Jones plus hough circles detection with difference in F1 score and TPR between results in Table \ref{tab:vjdartstable}}
 \label{tab:vjhoughdartstable}
+\end{center}
+
+\scalebox{0.5}{
+  \begin{tikzpicture}[node distance=1cm]
+  \tikzstyle{line}=[draw]
+  \tikzstyle{process} = [rectangle, minimum width=3cm, minimum height=1cm, text centered, text width=3cm, draw=black, fill=red!30]
+  \tikzstyle{decision} = [diamond, minimum width=3cm, text centered, text width=3cm, draw=black, fill=green!30]
+  \tikzstyle{sdecision} = [diamond, minimum width=3cm, draw=black, fill=green!30]
+  \tikzstyle{arrow}=[draw, -latex]
+  
+  \node (start) [process] {Start};
+  \node (gray) [process, right of=start, xshift=3.0cm] {Gray image};
+  \node (hough) [process, above right of=gray, xshift=3.5cm] {Hough circle transform};
+  \node (vj) [process, below right of=gray, xshift=3.5cm] {Vila Jones detection};
+  \node (threshold) [process, right of=gray, xshift=7cm] {IOU of circles and V-J detections};
+  
+  \draw [arrow] (start) -- (gray);
+  \draw [arrow] (gray) -- (hough);
+  \draw [arrow] (gray) -- (vj);
+  \draw [arrow] (vj) -- (threshold);
+  \draw [arrow] (hough) -- (threshold);
+  
+  \end{tikzpicture}
+}
+
+\section{Extending the Viola-Jones and Hough Circles detector with Hough Lines}
+
+From the previous results it is clear that the hough circles implementation was not effective when there was object blocking the dartboard or the dartboard was at an angle meaing the shape of the dartboard in the gradient image was actually an ellipse. In order to improve the detector an alternative method would need to be added which could detect dartboards in these specific conditions.
+
+\begin{center}
+\begin{tabular}{ |p{1.3cm}||p{1.3cm}|p{1.3cm}|p{1.3cm}|p{1.3cm}| }
+ \hline
+ \multicolumn{5}{|c|}{Frontal face detection results} \\
+ \hline
+ Image name & TPR & F1 & \(\Delta\) TPR & \(\Delta\) F1 \\
+ \hline
+ dart1  & 1  & 0.5 & 0 & -0.5 \\
+ dart2  & 1  & 0.4 & 0 & -0.1 \\
+ dart3  & 0  & 0 & 0 & 0 \\
+ dart4  & 0  & 0 & 0 & 0      \\
+ dart5  & 1  & 1 & 0 & 0      \\
+ dart6  & 0  & 0 & -1 & -0.182 \\
+ dart7  & 1  & 0.5 & +1 & +0.5 \\
+ dart8  & 0.5  & 0.667 & +0.5 & +0.667   \\
+ dart9  & 0.5  & 0.4 & +0.5 & +0.4           \\
+ dart10 & 0  & 0 & 0 & 0          \\
+ dart11 & 0.667  & 0.444 & +0.667  & +0.444          \\
+ dart12 & 0  & 0 & 0 & 0         \\
+ dart13 & 1  & 0.4 & +1 & +0.4         \\
+ dart14 & 1  & 0.5 & +1 & +0.5         \\
+ dart15 & 1  & 1   & +1 & +1     \\
+ \hline
+ Average& 0.333333  & 0.133232 & +0.289 & +0.298   \\ 
+ \hline
+\end{tabular}
+\captionof{table}{Viola-Jones plus hough circles detection with difference in F1 score and TPR between results in Table \ref{tab:vjdartstable}}
+\label{tab:vjhoughdartstable}
+\end{center}
 
 
-\begin{tikzpicture}[node distance=1cm]
-\tikzstyle{line}=[draw]
-\tikzstyle{process} = [rectangle, minimum width=3cm, minimum height=1cm, text centered, text width=3cm, draw=black, fill=orange!30]
-\tikzstyle{decision} = [diamond, minimum width=3cm, text centered, text width=3cm, draw=black, fill=green!30]
-\tikzstyle{sdecision} = [diamond, minimum width=3cm, draw=black, fill=green!30]
-\tikzstyle{arrow}=[draw, -latex]
-
-\node (start) [sdecision, yshift=-0.5cm] {Start};
-\node (gray) [process, below of=start, yshift=-0.5cm] {Gray image};
-\node (eqHist) [process, below of=gray, yshift=-0.5cm] {Equalize histogram};
-\node (grad) [process, below right of=eqHist, yshift=-0.8cm, xshift=1.5cm] {Image gradient};
-\node (hough) [process, below of=grad, yshift=-0.5cm] {Hough circle transform};
-\node (vj) [process, below left of=eqHist, yshift=-0.8cm, xshift=-1.cm] {Vila Jones detection};
-\node (threshold) [decision, below left of=hough, yshift=-2.5cm, xshift=-1.cm] {Compare intersection of hough and viloajones};
-
-\draw [arrow] (start) -- (gray);
-\draw [arrow] (gray) -- (eqHist);
-\draw [arrow] (eqHist) -| (grad);
-\draw [arrow] (eqHist) -| (vj);
-\draw [arrow] (grad) -- (hough);
-
-\draw [arrow] (hough) -- (threshold);
-\draw [arrow] (vj) -- (threshold);
-
-\end{tikzpicture}
 
 
 
