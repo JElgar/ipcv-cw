@@ -97,9 +97,9 @@ this not being considered a true value.
 All the results in Table \ref{tab:vjfacesresults} have a TPR value of 1. This
 means every valid face in the input images were detected. The Viola-Jones
 method however can often have a very hight TPR. This is as a result of
-"cascade" \cite{vj}implementation. When a region of the image is evaulated it
+"cascade" \cite{vj} implementation. When a region of the image is evaulated it
 is repeatedly passed through classifiers in an overall cascade until a
-classifier rejects the region of it passes thorugh all the classifiers and is
+classifier rejects the region or it passes thorugh all the classifiers and is
 therefore on the the detected regions. Each classifier has "very high detection
 rates" \cite{vj}. This means if a classifier does not have many stages then the
 overall cascade will also have a very high TPR rate by not rejecting many
@@ -238,29 +238,26 @@ out many of the neagative values.
 \label{tab:vjdartstable}
 \end{center}
 
-The Viola-Jones algorithm described as described in \cite{vj} uses very simple feature (2, 3 or 4 rectange features). This allows the Viola-Jones algorithm to be very efficient at detecting certain objects such as faces can be difficult to scale up to more complex objects such as dartboards. This can seen in the results above. Often the classifier finds a subsection of the true dartsboards as the complex repeating pattern of the dartboard means the simple detector can not scope the full board. Similarly the results in Table \ref{tab:vjdartstable} and Figure \ref{fig:vjdartsimages}, shows that the detector has many false positives. This suggests the simple features created by the cascade are also being detected throughout the image.
+The Viola-Jones algorithm as described in \cite{vj} uses very simple feature (2, 3 or 4 rectange features). This allows the Viola-Jones algorithm to be very efficient at detecting certain features in objects such as faces but can be difficult to scale up to more complex objects such as dartboards. As seen in \ref{fig:vjdartsimages} the classifier often finds a subsection of the true dartboards, this confirms the assumption that the Viola-Jones algorithm is not suited to detecting a full dart board but is effective at detecting sections of repeating dartboard pattern. 
 
-The average values in Table \ref{tab:vjdartstable}, show the unreliable results of
-the cascade for detecting dart boards.  It not only has a very low TPR and also
-a very low F1-score suggesting there are many missed dart boards as well as
-regions falsely classified. The images in Figure \ref{tab:vjdartsimages} show
-the wide range of results from the classifier. a and b show successful
-classifications yet b and c show the high number of false positives. It is also
-noteworthy that the TPR values achieved during training were far higher than
-the average achieved during testing. This is as a result of the method used to
-generate positive images. These took one image of a dart board and generated
-variations (via movements/rotations) on that image. This means when classifying
-different types of dartboards of those with objects in the way (such as
-\ref{tab:vjdartsimages} c) the classifier performs far worse.
+The results in Table \ref{tab:vjdartstable} also show that the detector has
+many false positives through its low F1 score. This suggests that the dartboard
+features are also being detected elsewhere in the image and show that
+additional steps will be required to filter the Viola-Jones results in order to
+improve the detector.
 
 \section{Combining Viola-Jones with hough circle detection}
 
 From the above section it is clear that the Viola Jones detector is not well
-suited to detecting dart boards and especially not to detecting the circular
-shape of the dart board. In order to overcome this limitation the results from
-the Viola-Jones detector can be combined with a circle hough transform. This
-circle hough transform can then be used to shrink the results set and increase
-the F1 score of the detector. The combination step is as follows:
+suited to detecting full dart boards. Although it is effective at detection the
+dart boards repeating pattern it is rarely detecting the full circular shape of
+the dart board and has many false positives. In order to overcome these
+limitation the results from the Viola-Jones detector can be combined with a
+circle hough transform. This circle hough transform can then be used to shrink
+the results set and increase the F1 score of the detector. Moreover the
+bounding region from the circle hough transform can be used as the resulting
+region as it is well suited to detecting the full dart board. The combination
+step is as follows:
 
 \begin{itemize}
   \item Run Viola-Jones and hough circles.
@@ -271,7 +268,7 @@ the F1 score of the detector. The combination step is as follows:
 \end{itemize} 
 
 The use of IOU with hough resulted in a large reduction in the set of results.
-For the required IOU a relatively low threshold was chosen (0.4) as often the
+For the required IOU a relatively low threshold was chosen (0.25) as often the
 Viola-Jones detector would find a sub section of the dart board (matching the
 expected pattern) but not the circle.  For this reason the final result used
 the maximum of the bounding boxes from the two detectors rather than the
@@ -319,7 +316,7 @@ in the number of false positives.
  dart8  & 0.5  & 0.667 & +0.5 & +0.667   \\
  dart9  & 0.5  & 0.4 & +0.5 & +0.4           \\
  dart10 & 0  & 0 & 0 & 0          \\
- dart11 & 0.667  & 0.444 & +0.667  & +0.444          \\
+ dart11 & 0  & 0 & 0 & 0          \\
  dart12 & 0  & 0 & 0 & 0         \\
  dart13 & 1  & 0.4 & +1 & +0.4         \\
  dart14 & 1  & 0.5 & +1 & +0.5         \\
@@ -401,17 +398,17 @@ This updates the flow diagram to look as follows:
  \hline
  Image name & TPR & F1 & \(\Delta\) TPR & \(\Delta\) F1 \\
  \hline
- dart1  & 1  & 0.5 & 0 & -0.5 \\
- dart2  & 1  & 0.4 & 0 & -0.1 \\
- dart3  & 0  & 0 & 0 & 0 \\
- dart4  & 0  & 0 & 0 & 0      \\
- dart5  & 1  & 1 & 0 & 0      \\
- dart6  & 0  & 0 & -1 & -0.182 \\
- dart7  & 1  & 0.5 & +1 & +0.5 \\
- dart8  & 0.5  & 0.667 & +0.5 & +0.667   \\
- dart9  & 0.5  & 0.4 & +0.5 & +0.4           \\
- dart10 & 0  & 0 & 0 & 0          \\
- dart11 & 0.667  & 0.444 & +0.667  & +0.444          \\
+ dart1  & 1  & 1 & 0 & 0 \\
+ dart2  & 1  & 0.667 & 0 & +0.167       \\
+ dart3  & 1  & 0.667 & 0 & +0.167      \\
+ dart4  & 1  & 0.286 & +1 & +0.286         \\
+ dart5  & 1  & 0.5 & 0 & -0.5         \\
+ dart6  & 1  & 1 & +1 & +1 \\
+ dart7  & 1  & 0.5 & 0 & 0         \\
+ dart8  & 0.5  & 0.667 & 0 & 0   \\
+ dart9  & 0.5  & 0.286 & 0 & -0.114           \\
+ dart10 & 0.333  & 0.182 & +0.333 & +0.182          \\
+ dart11 & 0  & 0 & 0 & 0 \\
  dart12 & 0  & 0 & 0 & 0         \\
  dart13 & 1  & 0.4 & +1 & +0.4         \\
  dart14 & 1  & 0.5 & +1 & +0.5         \\
@@ -424,11 +421,27 @@ This updates the flow diagram to look as follows:
 \label{tab:vjhoughdartstable}
 \end{center}
 
+\begin{multicols}{4}
+  \centerline{\includegraphics[width=\linewidth]{assets/houghvjlines/12/vj-output.jpg}\par}
+  \centerline{\includegraphics[width=\linewidth]{assets/houghvjlines/12/lines-hough-output.png}\par}
+  \centerline{\includegraphics[width=\linewidth]{assets/houghvjlines/12/cirlce-hough-output.jpg}\par}
+  \centerline{\includegraphics[width=\linewidth]{assets/houghvjlines/12/final-output-true.jpg}\par}
+\end{multicols}
 
+\captionof{figure}{Example out of detector using hough lines}
+\label{fig:examplebadhoughlines}
 
+The images in Figure \ref{fig:examplebadhoughlines} show the main limitation of this approach. In many cases the output from Viola-Jones detects subsection of the dartboard. When using hough circles this was overcome by using the output of the hough circle instead of the original Viola-Jones region. However when incorporating Hough lines, there is no mechanism to find the center of the region. 2 potential solutions to this short coming would be:
 
+\subsection{Probabilistic Hough Line Transform}
 
-\end{multicols}{2}
+Using a probabilistic Hough line transform, instead of the generic Hough line transform would also return the end points of the detected lines. These line could then both be used to check for the intersecting lines found on the dartboard as well as determine the size and shape of the dartboard. 
+
+\subsection{Hough Ellipse Transform}
+
+Alternatively an Hough ellipse transform could be used. This would allow the detector to find a greater number of the dartboards and an angle and also indicate the true shape of the board in the image. However a hough ellipse requires a 5D Hough space which can be expensive to create, store and use.
+
+\end{multicols}
 
 \bibliographystyle{unsrt}
 \bibliography{report}

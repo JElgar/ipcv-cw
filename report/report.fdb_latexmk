@@ -1,12 +1,12 @@
 # Fdb version 3
-["bibtex report"] 1607555772 "report.aux" "report.bbl" "report" 1607562464
+["bibtex report"] 1607612420 "report.aux" "report.bbl" "report" 1607612552
   "/usr/local/texlive/2020/texmf-dist/bibtex/bst/base/unsrt.bst" 1292289607 18030 1376b4b231b50c66211e47e42eda2875 ""
-  "report.aux" 1607562464 2634 66b68700eeaf3b78c2c0f06e894c6ba8 "pdflatex"
+  "report.aux" 1607612552 3072 1b8d2a487eeb2476d16d011197f18496 "pdflatex"
   "report.bib" 1607531242 619 9e0ecc2bfe2865a236167725a929954d ""
   (generated)
-  "report.blg"
   "report.bbl"
-["pdflatex"] 1607562462 "report.tex" "report.pdf" "report" 1607562464
+  "report.blg"
+["pdflatex"] 1607612551 "report.tex" "report.pdf" "report" 1607612552
   "/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/jknappen/ec/tcrm1000.tfm" 1136768653 1536 e07581a4bb3136ece9eeb4c3ffab8233 ""
@@ -171,9 +171,13 @@
   "assets//houghvj/8/final-output.jpg" 1607509629 259279 48803b2aa7898978218e0c210b510c2d ""
   "assets//houghvj/8/graddirection.png" 1607512005 427812 953fc9c9aa244b70ca092e86bc289a52 ""
   "assets//houghvj/8/gradmag.png" 1607508884 536081 a38ed8ca442e0df5625abf4bd8062822 ""
-  "report.aux" 1607562464 2634 66b68700eeaf3b78c2c0f06e894c6ba8 "pdflatex"
-  "report.bbl" 1607555772 330 efcac3123571db82cb27384d9a208a2e "bibtex report"
-  "report.tex" 1607562461 17764 2030d82b16d123a883337c917ea07925 ""
+  "assets/houghvjlines/12/cirlce-hough-output.jpg" 1607611429 35263 15da88daffa6912ba1af6fb320cc2f24 ""
+  "assets/houghvjlines/12/final-output-true.jpg" 1607611738 46993 ec107b35b49ea502be48c85fb614d96c ""
+  "assets/houghvjlines/12/lines-hough-output.png" 1607611429 72712 d804045ea77edc69a6221e8acf94a392 ""
+  "assets/houghvjlines/12/vj-output.jpg" 1607611429 35743 0d170693a8e52b94a7ff1773338c7625 ""
+  "report.aux" 1607612552 3072 1b8d2a487eeb2476d16d011197f18496 "pdflatex"
+  "report.bbl" 1607612420 330 efcac3123571db82cb27384d9a208a2e "bibtex report"
+  "report.tex" 1607612550 18932 b660d61cb5792527cf047ee7de9009e4 ""
   (generated)
   "report.aux"
   "report.pdf"

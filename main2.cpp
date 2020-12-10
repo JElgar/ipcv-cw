@@ -35,6 +35,35 @@ std::pair<cv::Point, cv::Point> getTwoPointsOnLine(cv::Vec2f line) {
   return std::pair<cv::Point, cv::Point>(point1, point2);
 }
 
+cv::Rect circleToRect(cv::Vec3i circle) {
+  return cv::Rect(cv::Point(circle[0] - circle[2], circle[1] - circle[2]), cv::Point(circle[0] + circle[2], circle[1] + circle[2]));
+}
+
+void draw(cv::Rect rect, cv::Mat frame, cv::Scalar colour) {
+    rectangle(frame, rect, colour, 2);
+}
+
+void draw(std::vector<cv::Rect> rects, cv::Mat frame, cv::Scalar colour) {
+  for ( int i = 0; i < rects.size(); i++ ) {
+    draw(rects[i], frame, colour);
+  }
+}
+
+void draw(std::vector<cv::Vec3i> circles, cv::Mat frame, cv::Scalar colour = cv::Scalar(255, 0, 255)) {
+  for (cv::Vec3i circle : circles) {
+    std::cout << circle[2] << std::endl;
+    cv::Rect circle_rect = circleToRect(circle);
+    cv::Point center = cv::Point(circle[0], circle[1]);
+    // circle center
+    cv::circle( frame , center, 1, cv::Scalar(0,100,100), 3, 8);
+    // circle outline
+    int radius = circle[2];
+    cv::circle( frame , center, radius, colour, 3, 8);
+    cv::rectangle(frame, circle_rect , colour, 2);
+  }
+}
+
+
 cv::Point lineIntersection(cv::Vec2f line1, cv::Vec2f line2) {
   float theta1 = line1[0];
   float rho1 = line1[1];
@@ -150,7 +179,7 @@ cv::Mat gradientDirection (cv::Mat &input) {
 }
 
 
-std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 14, bool draw = false) {
+std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 14, bool drawHoughSpace = false) {
   
   cv::Mat input_edges, input_gray, magnitude;
   input_gray = input;
@@ -160,7 +189,7 @@ std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 14, bool dr
   int height = input.rows, width = input.cols;
 
   int maxRadius = 120;
-  int minRadius = 30;
+  int minRadius = 35;
   int rangeRadius = maxRadius - minRadius;
 
   int thetaErrorRange = 13;
@@ -221,7 +250,7 @@ std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 14, bool dr
   std::cout << "Hough space generated" << std::endl;
 
   // -- Covert the 3D houghSpace into a 2D image so we can have a look -- //
-  if (draw) {
+  if (drawHoughSpace) {
     cv::Mat houghSpaceImage = cv::Mat::zeros(width, height, CV_32SC1);
     for (int x = 0; x < width; x++){
       for (int y = 0; y < height; y++){
@@ -236,6 +265,7 @@ std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 14, bool dr
   // -- Extract cicles -- // 
   std::vector<cv::Vec3i> circles;
  
+  std::cout << "Getting peaks" << std::endl;
   // Loop until there are no more values in the hough space greater than the threshold
   while (true) {
 
@@ -266,14 +296,21 @@ std::vector<cv::Vec3i> houghCircles (cv::Mat &input, int threshold = 14, bool dr
           }
         }
       }
+      std::cout << "Got peak: " << currentMax << std::endl;
     }
-
     else {
       // If the max value is less than the threashold stop the loop 
       break;
     }
 
   }
+  std::cout << "Got peaks" << std::endl;
+    
+  cv::Mat circlesOutput;
+  input.copyTo(circlesOutput);
+  draw(circles, circlesOutput);
+  std::cout << "Circles length:" << circles.size() << std::endl;
+  cv::imwrite("cirlce-hough-output.jpg", circlesOutput);
 
   return circles;
 }
@@ -295,7 +332,7 @@ std::vector<cv::Vec2f> houghLines(cv::Mat &input) {
 
   int gradientThreshold = 180;
   int thetaRange = 180;
-  int houghThreshold = 72;
+  int houghThreshold = 76;
 
   cv::Mat houghSpace = cv::Mat::zeros(numberOfRadii, numberOfAngles, CV_32FC1);
   std::cout << "Hough space height: " << houghSpace.size().height << std::endl;
@@ -405,34 +442,6 @@ std::vector<cv::Rect> get_true_face(std::string path) {
   return faces;
 }
 
-cv::Rect circleToRect(cv::Vec3i circle) {
-  return cv::Rect(cv::Point(circle[0] - circle[2], circle[1] - circle[2]), cv::Point(circle[0] + circle[2], circle[1] + circle[2]));
-}
-
-void draw(cv::Rect rect, cv::Mat frame, cv::Scalar colour) {
-    rectangle(frame, rect, colour, 2);
-}
-
-void draw(std::vector<cv::Rect> rects, cv::Mat frame, cv::Scalar colour) {
-  for ( int i = 0; i < rects.size(); i++ ) {
-    draw(rects[i], frame, colour);
-  }
-}
-
-void draw(std::vector<cv::Vec3i> circles, cv::Mat frame, cv::Scalar colour = cv::Scalar(255, 0, 255)) {
-  for (cv::Vec3i circle : circles) {
-    std::cout << circle[2] << std::endl;
-    cv::Rect circle_rect = circleToRect(circle);
-    cv::Point center = cv::Point(circle[0], circle[1]);
-    // circle center
-    cv::circle( frame , center, 1, cv::Scalar(0,100,100), 3, 8);
-    // circle outline
-    int radius = circle[2];
-    cv::circle( frame , center, radius, colour, 3, 8);
-    cv::rectangle(frame, circle_rect , colour, 2);
-  }
-}
-
 float intersection_over_union(cv::Rect detected_rect, cv::Rect true_rect) {
   return (detected_rect & true_rect).area() / (float)(detected_rect | true_rect).area();
 }
@@ -482,7 +491,7 @@ float f1_score(std::vector<cv::Rect> detected_rects, std::vector<cv::Rect> true_
   return (float)2 * (precision * recall) / (precision + recall);
 }
 
-std::vector<cv::Rect> voilaJonesDartDetection(cv::Mat &input) {
+std::vector<cv::Rect> violaJonesDartDetection(cv::Mat &input) {
   cv::String cascade_name = "dartcascade/cascade.xml";
   cv::CascadeClassifier cascade;
   if( !cascade.load( cascade_name ) ){ 
@@ -493,15 +502,22 @@ std::vector<cv::Rect> voilaJonesDartDetection(cv::Mat &input) {
     
   std::vector<cv::Rect> faces;
   cascade.detectMultiScale( input, faces, 1.1, 1, 0|CV_HAAR_SCALE_IMAGE, cv::Size(50, 50), cv::Size(500,500) );
+    
+  cv::Mat vjOutput;
+  input.copyTo(vjOutput);
+  draw(faces, vjOutput, cv::Scalar(0, 255, 0));
+  cv::imwrite("vj-output.jpg", vjOutput);
   return faces;
 }
 
-std::vector<cv::Rect> detectDartboards(cv::Mat image_gray, float threshold = 0.25) {
+std::vector<cv::Rect> detectDartboards(cv::Mat image_gray, float threshold = 0.15) {
 
   // Do vj and hough and store results
+  std::vector<cv::Vec3i> hough_circles = houghCircles(image_gray, 28);
+  std::vector<cv::Rect> vj_boards = violaJonesDartDetection(image_gray);
   std::vector<cv::Vec2f> hough_lines = houghLines(image_gray);
-  std::vector<cv::Vec3i> hough_circles = houghCircles(image_gray, 35);
-  std::vector<cv::Rect> vj_boards = voilaJonesDartDetection(image_gray);
+
+  std::vector<int> boardsDetectedInStage1;
   std::vector<cv::Rect> combined_boards; 
 
   // Find IOU of hough_boards and vj_boards and  
@@ -520,17 +536,35 @@ std::vector<cv::Rect> detectDartboards(cv::Mat image_gray, float threshold = 0.2
     std::cout << "The max_iou in thing is: " << max_iou << std::endl;
     if (max_iou > threshold) {
 
-      // Push the thing with the max area
-      if(circleToRect(max_hough_board).area() > vj_board.area()) {
-        combined_boards.push_back(circleToRect(max_hough_board));
-      } else {
-        std::cout << "Took board with area " << vj_board.area() << " instead of circle " << circleToRect(max_hough_board) << std::endl;
-        combined_boards.push_back(vj_board);
+      // If this circle is an inner circle of another circle then lets take the outer circle
+      // The helps with the consentric rings of the dart board 
+      int centerPointThreshold = 20;
+      for (cv::Vec3i circle : hough_circles) {
+        if (circle != max_hough_board) {
+          cv::Point distance = cv::Point(circle[0], circle[1]) - cv::Point(max_hough_board[0], max_hough_board[1]);
+          if (cv::sqrt(distance.x*distance.x + distance.y*distance.y) < centerPointThreshold) {
+            // If the current max has a smaller radius than this circle, set the current (larger) circle to the max 
+            if (max_hough_board[2] < circle[2]) {
+              max_hough_board = circle;
+            }
+          }
+        }
       }
+      // Push the thing with the max area
+      combined_boards.push_back(circleToRect(max_hough_board));
+      //if(circleToRect(max_hough_board).area() > vj_board.area()) {
+      //} else {
+      //  std::cout << "Took board with area " << vj_board.area() << " instead of circle " << circleToRect(max_hough_board) << std::endl;
+      //  combined_boards.push_back(vj_board);
+      //}
 
-      // Remove from vector so we dont readadd when doing lines stuff
-      vj_boards.erase(vj_boards.begin() + i);
+      boardsDetectedInStage1.push_back(i);
     } 
+  }
+
+  // Remove boards detected in stage 1
+  for (int index : boardsDetectedInStage1) {
+    vj_boards.erase(vj_boards.begin() + index);
   }
 
   // For the remaining boards
@@ -551,7 +585,7 @@ std::vector<cv::Rect> detectDartboards(cv::Mat image_gray, float threshold = 0.2
     }
   }
     
-  int intersectionThreshold = 10;
+  int intersectionThreshold = 2;
   int requiredIntersections = 3;
 
   for(cv::Rect vj_board : vj_boards) {
@@ -584,7 +618,42 @@ std::vector<cv::Rect> detectDartboards(cv::Mat image_gray, float threshold = 0.2
     }
   }
 
-  return combined_boards;
+  std::cout << "True outputs before filtering" << std::endl;
+
+  // Remove duplicates
+  std::vector<cv::Rect> combined_boards_without_duplicated;
+  for (int i = 0; i < combined_boards.size(); i++) {
+    bool foundDuplicate = false;
+    for (int j = i - 1; j >= 0; j--) {
+      if (combined_boards[i] == combined_boards[j]) {
+        foundDuplicate = true;
+      }
+    }
+    if (!foundDuplicate) {
+      combined_boards_without_duplicated.push_back(combined_boards[i]);
+    }
+  }
+      
+  // If this circle is an inner circle of another circle then lets take the outer circle
+  // The helps with the consentric rings of the dart board 
+  //std::vector<int> boardsContainedByOtherBoards;
+  //int centerPointThreshold = 20;
+  //for (int i = 0; i < combined_boards_without_duplicated.size(); i++) {
+  //  bool foundOuterCircle = false;
+  //  for (int j = i - 1; j >= 0; j--) {
+  //    cv::Point distance = cv::Point(circle[0], circle[1]) - cv::Point(max_hough_board[0], max_hough_board[1]);
+  //    if (cv::sqrt(distance.x*distance.x + distance.y*distance.y) < centerPointThreshold) {
+  //      // If the current max has a smaller radius than this circle, set the current (larger) circle to the max 
+  //      if (max_hough_board[2] < circle[2]) {
+  //        max_hough_board = circle;
+  //      }
+  //    }
+  //  }
+  //  if (!foundOuterCircle) {
+  //    combined_boards_without_duplicated.push_back(combined_boards[i]);
+  //  }
+  //}
+  return combined_boards_without_duplicated;
 }
 
 
@@ -635,7 +704,7 @@ main (int argc, char **argv)
     std::vector<cv::Rect> finalBoards = detectDartboards(image_gray);
     cv::Mat finalOutput;
     image.copyTo(finalOutput);
-    draw(finalBoards, finalOutput, cv::Scalar(0, 0, 255));
+    draw(finalBoards, finalOutput, cv::Scalar(0, 255, 0));
     cv::imwrite("final-output.jpg", finalOutput);
 
     // -- Compare with true values -- //
@@ -644,7 +713,7 @@ main (int argc, char **argv)
     std::cout << "TPR: " << true_positive_rate(finalBoards, true_faces) << std::endl;
     std::cout << "F1: " << f1_score(finalBoards, true_faces) << std::endl;
    
-    draw(true_faces, finalOutput, cv::Scalar(0, 255, 0));
+    draw(true_faces, finalOutput, cv::Scalar(0, 0, 255));
     cv::imwrite("final-output-true.jpg", finalOutput);
 
     // free memory
