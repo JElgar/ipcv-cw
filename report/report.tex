@@ -340,11 +340,11 @@ in the number of false positives.
   \tikzstyle{sdecision} = [diamond, minimum width=3cm, draw=black, fill=green!30]
   \tikzstyle{arrow}=[draw, -latex]
   
-  \node (start) [process] {Start};
-  \node (gray) [process, right of=start, xshift=3.0cm] {Gray image};
-  \node (hough) [process, above right of=gray, xshift=3.5cm] {Hough circle transform};
-  \node (vj) [process, below right of=gray, xshift=3.5cm] {Vila Jones detection};
-  \node (threshold) [process, right of=gray, xshift=7cm] {IOU of circles and V-J detections};
+  \node (start) [process] {start};
+  \node (gray) [process, right of=start, xshift=3.0cm] {gray image};
+  \node (hough) [process, above right of=gray, xshift=3.5cm] {hough circle transform};
+  \node (vj) [process, below right of=gray, xshift=3.5cm] {vila jones detection};
+  \node (threshold) [process, right of=gray, xshift=7cm] {iou of circles and v-j detections};
   
   \draw [arrow] (start) -- (gray);
   \draw [arrow] (gray) -- (hough);
@@ -357,7 +357,42 @@ in the number of false positives.
 
 \section{Extending the Viola-Jones and Hough Circles detector with Hough Lines}
 
-From the previous results it is clear that the hough circles implementation was not effective when there was object blocking the dartboard or the dartboard was at an angle meaing the shape of the dartboard in the gradient image was actually an ellipse. In order to improve the detector an alternative method would need to be added which could detect dartboards in these specific conditions.
+From the previous results it is clear that the hough circles implementation was not effective when there was object blocking the dartboard or the dartboard was at an angle meaing the shape of the dartboard in the gradient image was an ellipse. In order to improve the detector an alternative method would need to be added which could detect dartboards in these specific conditions. The porposed improvement is:
+
+\begin{itemize}
+  \item Run the Viola-Jones detector and Hough Circles and filter as before 
+  \item Run Hough lines
+  \item For the detected regions from Viola-Jones which are rejected by the
+    comparison with hough circles check if there are 3 or more lines which
+    intersect inside this region. If so accept the region.
+\end{itemize} 
+
+This updates the flow diagram to look as follows:
+
+\scalebox{0.7}{
+  \begin{tikzpicture}[node distance=1cm]
+  \tikzstyle{line}=[draw]
+  \tikzstyle{process} = [rectangle, minimum width=3cm, minimum height=1cm, text centered, text width=3cm, draw=black, fill=red!30]
+  \tikzstyle{decision} = [diamond, minimum width=3cm, text centered, text width=3cm, draw=black, fill=green!30]
+  \tikzstyle{arrow}=[draw, -latex]
+  
+  \node (gray) [process, xshift=3.0cm] {gray image};
+  \node (hough) [process, above right of=gray, xshift=3.5cm, yshift=-2cm] {Hough lines};
+  \node (vj) [process, right of=gray, xshift=3.5cm] {Viola-Jones};
+  \node (lines) [process, below right of=gray, xshift=3.5cm, yshift=2cm] {Hough circles};
+  \node (threshold) [process, below right of=vj, xshift=3.5cm] {iou of circles and v-j detections over threshold?};
+  \node (3lines) [process, above right of=vj, xshift=3.5cm] {Three intersecting lines?};
+  
+  \draw [arrow] (gray) -- (hough);
+  \draw [arrow] (gray) -- (vj);
+  \draw [arrow] (gray) -- (lines);
+  \draw [arrow] (vj) -- (threshold);
+  \draw [arrow] (hough) -- (threshold);
+  \draw [arrow] (vj) -- (3lines);
+  \draw [arrow] (lines) -- (3lines);
+  
+  \end{tikzpicture}
+}
 
 \begin{center}
 \begin{tabular}{ |p{1.3cm}||p{1.3cm}|p{1.3cm}|p{1.3cm}|p{1.3cm}| }
