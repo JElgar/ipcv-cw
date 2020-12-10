@@ -1,20 +1,18 @@
 # Fdb version 3
-["bibtex report"] 1607612420 "report.aux" "report.bbl" "report" 1607614742
+["bibtex report"] 1607641074 "report.aux" "report.bbl" "report" 1607641075
   "/usr/local/texlive/2020/texmf-dist/bibtex/bst/base/unsrt.bst" 1292289607 18030 1376b4b231b50c66211e47e42eda2875 ""
-  "report.aux" 1607614742 3072 1b8d2a487eeb2476d16d011197f18496 "pdflatex"
+  "report.aux" 1607641075 3397 fab1a3bfad00d37e641a931caa180be3 "pdflatex"
   "report.bib" 1607531242 619 9e0ecc2bfe2865a236167725a929954d ""
   (generated)
   "report.bbl"
   "report.blg"
-["pdflatex"] 1607614741 "report.tex" "report.pdf" "report" 1607614742
+["pdflatex"] 1607641074 "report.tex" "report.pdf" "report" 1607641075
   "/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/jknappen/ec/tcrm1000.tfm" 1136768653 1536 e07581a4bb3136ece9eeb4c3ffab8233 ""
-  "/usr/local/texlive/2020/texmf-dist/fonts/tfm/public/cm/cmbx10.tfm" 1136768653 1328 c834bbb027764024c09d3d2bf908b5f0 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm" 1136768653 1324 c910af8c371558dc20f2d7822f66fe64 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/public/cm/cmr12.tfm" 1136768653 1288 655e228510b4c2a1abe905c368440826 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/public/cm/cmti10.tfm" 1136768653 1480 aa8e34af0eb6a2941b776984cf1dfdc4 ""
-  "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb" 1248133631 34811 78b52f49e893bcba91bd7581cdc144c0 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb" 1248133631 32080 340ef9bf63678554ee606688e7b5339d ""
   "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb" 1248133631 36299 5f9df58c2139e7edcf37c8fca4bd384d ""
   "/usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb" 1248133631 35752 024fb6c41858982481f6968b5fc26508 ""
@@ -167,6 +165,10 @@
   "assets//dart4-face.jpg" 1606578723 167480 abd49bf5f7d01dae3cf8e144ea8ec2ba ""
   "assets//dart5-face.jpg" 1606578771 212421 5899fa9da9d68f301af034b0ec60a1c1 ""
   "assets//dart6-dart.jpg" 1607533249 95480 7d4fe507fb3b9447c15b4c41985c0459 ""
+  "assets//houghvj/4/cirlce-hough-output.jpg" 1607636301 145304 9a74d6fd4a3df10036f09a7dcaf4bbc8 ""
+  "assets//houghvj/4/cirlce-hough-space.jpg" 1607526178 139888 d8d3c982c64cd0430ea0c03d795f7961 ""
+  "assets//houghvj/4/graddirection.png" 1607636285 413374 c0a3394e53fbaa0df9c8170950182202 ""
+  "assets//houghvj/4/gradmag.png" 1607636285 300922 5d325b37bc5dfe3c3202fc0d64ddfcc8 ""
   "assets//houghvj/8/cirlce-hough-space.jpg" 1607512517 177136 25698c9a4d3ad771aa165cf7a77cd2e4 ""
   "assets//houghvj/8/final-output.jpg" 1607509629 259279 48803b2aa7898978218e0c210b510c2d ""
   "assets//houghvj/8/graddirection.png" 1607512005 427812 953fc9c9aa244b70ca092e86bc289a52 ""
@@ -175,10 +177,10 @@
   "assets/houghvjlines/12/final-output-true.jpg" 1607611738 46993 ec107b35b49ea502be48c85fb614d96c ""
   "assets/houghvjlines/12/lines-hough-output.png" 1607611429 72712 d804045ea77edc69a6221e8acf94a392 ""
   "assets/houghvjlines/12/vj-output.jpg" 1607611429 35743 0d170693a8e52b94a7ff1773338c7625 ""
-  "report.aux" 1607614742 3072 1b8d2a487eeb2476d16d011197f18496 "pdflatex"
-  "report.bbl" 1607612420 330 efcac3123571db82cb27384d9a208a2e "bibtex report"
-  "report.tex" 1607614741 18936 bdc657784a8ff08c1ef10a6af74277ba ""
+  "report.aux" 1607641075 3397 fab1a3bfad00d37e641a931caa180be3 "pdflatex"
+  "report.bbl" 1607641074 330 efcac3123571db82cb27384d9a208a2e "bibtex report"
+  "report.tex" 1607641072 24194 2b08aa1dd944e51c82c31a404dc7fbd0 ""
   (generated)
+  "report.aux"
   "report.log"
   "report.pdf"
-  "report.aux"

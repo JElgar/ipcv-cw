@@ -275,7 +275,7 @@ main (int argc, char **argv)
 
     cv::Mat gradD = gradientDirection(image_gray);
     cv::Mat gradM = gradientMagnitude(image_gray);
-    cv::imwrite("graddirection.png", gradD * 10);
+    cv::imwrite("graddirection.png", gradD * 100);
     cv::imwrite("gradmag.png", gradM);
 
     std::vector<cv::Rect> true_faces;
